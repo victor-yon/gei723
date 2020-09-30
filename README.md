@@ -1,4 +1,4 @@
-# gei723
+# GEI723 - Neurosciences computationnelles et applications en traitement de l'information
 
 ## Install
 
