@@ -5,6 +5,8 @@ from brian2 import *
 from pygame import keys
 from pygame.locals import K_i # i pour input
 import time
+# from brian2 import *
+# import pygame
 
 %matplotlib inline
 # import matplotlib
@@ -60,3 +62,6 @@ plot(M_G.t/ms, sortie_G[0])
 plot(M_G.t/ms, sortie_G[1])
 xlabel(r'$\tau$ (ms)')
 ylabel('potentiel v')
+
+
+# Le commentaire en bas du fichier!
