@@ -1,0 +1,24 @@
+# Neurones qui reçoivent le signal de l'oscillateur et qui transmettent les commandes aux pattes
+
+from brian2 import *
+%matplotlib inline
+
+eqs = '''
+dv/dt = (I-v)/tau
+I : 1
+tau : second
+th : 1
+'''
+
+# I_Oscillateur
+# I_récepteurs
+
+#
+
+
+class PaceMakers(self, N, I, ):
+    def __init__(self):
+
+        PM = NeuronGroup(N, eqs, threshold = '', reset = '', method = 'exact')
+
+        network

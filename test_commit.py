@@ -5,8 +5,8 @@ from brian2 import *
 from pygame import keys
 from pygame.locals import K_i # i pour input
 import time
-# from brian2 import *
-# import pygame
+from brian2 import *
+import pygame
 
 %matplotlib inline
 # import matplotlib
