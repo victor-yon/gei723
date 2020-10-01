@@ -8,7 +8,6 @@ import time
 from brian2 import *
 import pygame
 
-%matplotlib inline
 # import matplotlib
 
 start_scope()
