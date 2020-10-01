@@ -1,9 +1,9 @@
 # Neurones qui reçoivent le signal de l'oscillateur et qui transmettent les commandes aux pattes
 
 from brian2 import *
-%matplotlib inline
+import matplotlib
 
-eqs = '''
+eqs_PM = '''
 dv/dt = (I-v)/tau
 I : 1
 tau : second
