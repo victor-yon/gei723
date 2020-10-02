@@ -10,7 +10,11 @@ from brian2 import *
 #Avancer += str(Commande)
 #vitesse = Avancer.count("a")
 
-vitesse = 3
+#C'est ce paramétre de vitesse qu'il faut faire varier
+#ça fonctionne pour les vitesses 1,2,6,7,8 et 10
+#A partir de la vitesse 6, les sauts synaptiques ne sont plus totalement verticaux
+
+vitesse = 2
 
 #equation utilisée
 eqs = '''
