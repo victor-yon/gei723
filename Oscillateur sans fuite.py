@@ -14,7 +14,7 @@ from brian2 import *
 #ça fonctionne pour les vitesses 1,2,6,7,8 et 10
 #A partir de la vitesse 6, les sauts synaptiques ne sont plus totalement verticaux
 
-vitesse = 2
+vitesse = 8
 
 #equation utilisée
 eqs = '''
@@ -44,10 +44,10 @@ S_declenche.connect(i=0, j=0)
 
 #Oscillation
 #a = 0
-S_oscil =Synapses(G, G, on_pre='v_post += 0.2', on_post = '''I_pre = 0; I_post = 2''')
+S_oscil =Synapses(G, G, on_pre='v_post += 0.2; I_pre = 0; I_post = 2') # on_post = '''I_pre = 0; I_post = 2'''
 S_oscil.connect(i = 0, j=1)
 S_oscil.connect(i = 1, j=0)
-S_oscil.delay = G.th*G.tau /2
+S_oscil.delay = G.th*G.tau*1.5 #/2
 
 Dec = StateMonitor(Declencheur, 'v', record=True) 
 M = StateMonitor(G, 'v', record=True)
@@ -67,7 +67,7 @@ xlabel('Time (ms)')
 ylabel('v')
 legend()
 title("Vitesse : {0}".format(vitesse))
-plt.show()
+show()
 
 #Faire une commande, quand on presse le fleche, I du neurone déclencheur est initialisé
 #a 2, donc il charge, et déclenche au bout de 5ms
