@@ -14,7 +14,7 @@ from brian2 import *
 #ça fonctionne pour les vitesses 1,2,6,7,8 et 10
 #A partir de la vitesse 6, les sauts synaptiques ne sont plus totalement verticaux
 
-vitesse = 8
+vitesse = 3
 
 #equation utilisée
 eqs = '''
