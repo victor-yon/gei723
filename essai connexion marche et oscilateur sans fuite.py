@@ -109,7 +109,7 @@ Gimp = StateMonitor(Gauche_impaire, 'v', record=0)
 spikemon = SpikeMonitor(G)
 nombre = spikemon.count
 
-## [Connexion à la marche][Neurone qui son relié à la premiére partie de l'oscillateur]
+## [Connexion à la marche][Neurone qui sont reliés à la premiére partie de l'oscillateur]
 
 #Relier l'oscilateur aux pattes. "nombre" compte le nombre de fois que les 2 neurones
 #De l'oscilateur déclenchent
@@ -118,20 +118,18 @@ nombre = spikemon.count
 S_gauche_paire = Synapses(G, Gauche_paire, on_pre = 'v_post += th/droite')
 S_droite_impaire =  Synapses(G, Droit_impaire, on_pre = 'v_post += th/gauche')
 
-#Attention à la partie connection, pour un nombre N de patte, faire une connexion in range()
-
-S_gauche_paire.connect(i = 0, j=0)
+S_gauche_paire.connect(i = 0, j = [k for k in range(Npaire)])
 #S_gauche_paire.delay = 2*ms
-S_droite_impaire.connect(i = 0, j=[0,1])
+S_droite_impaire.connect(i = 0, j=[k for k in range(Nimpaire)])
 #S_droite_impaire.delay = 2*ms
 
-## [Connexion à la marche][Neurone qui son relié à la deuxiéme partie de l'oscillateur]
+## [Connexion à la marche][Neurone qui sont reliés à la deuxiéme partie de l'oscillateur]
 
 S_gauche_impaire = Synapses(G, Gauche_impaire, on_pre = 'v_post += th/droite')
 S_droite_paire =  Synapses(G, Droit_paire, on_pre = 'v_post += th/gauche')
-S_gauche_impaire.connect(i = 1, j=[0,1])
+S_gauche_impaire.connect(i = 1, j=[k for k in range(Nimpaire)])
 #S_gauche_paire.delay = 2*ms
-S_droite_paire.connect(i = 1, j=0)
+S_droite_paire.connect(i = 1, j=[k for k in range(Npaire)])
 #S_droite_impaire.delay = 2*ms
 
 
