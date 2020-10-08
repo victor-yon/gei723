@@ -1,8 +1,10 @@
+import logging
 from math import sqrt, cos
 from typing import List, Tuple
 
 
 class BobLeg:
+    _index: Tuple[int, int]
     _is_on_ground: bool = True
     _current_position: float
     _min_position: float
@@ -10,10 +12,12 @@ class BobLeg:
     _move_size: float
     _size: float
 
-    def __init__(self, min_position: int = -45, max_position: int = 45, move_size: float = 9, size: int = 1):
+    def __init__(self, index: Tuple[int, int], min_position: int = -45, max_position: int = 45, move_size: float = 9,
+                 size: int = 1):
         """
         Create one Bob's leg.
 
+        :param index: The leg index in the body
         :param min_position: The maximal angular position of the leg. (degree°)
         :param max_position: The minimal angular position of the leg. (degree°)
         :param move_size: The angular standard move size. (degree°)
@@ -24,6 +28,7 @@ class BobLeg:
             raise ValueError(
                 f'The min leg position ({min_position}) should be lower than the max position ({max_position}).')
 
+        self._index = index
         self._min_position = min_position
         self._max_position = max_position
         self._current_position = min_position
@@ -34,13 +39,21 @@ class BobLeg:
         """
         Raise this leg from the ground.
         """
-        self._is_on_ground = False
+        if self._is_on_ground:
+            self._is_on_ground = False
+            logging.info(f'Leg {self._index} raised from the ground')
+        else:
+            logging.debug(f'Leg {self._index} raised from the ground (--no change--)')
 
     def down_to_ground(self):
         """
         Put the leg down to the ground.
         """
-        self._is_on_ground = True
+        if not self._is_on_ground:
+            self._is_on_ground = True
+            logging.info(f'Leg {self._index} down to the ground')
+        else:
+            logging.debug(f'Leg {self._index} down to the ground (--no change--)')
 
     def move_forward(self) -> float:
         """
@@ -53,13 +66,23 @@ class BobLeg:
 
         self._current_position = min(self._current_position + self._move_size, self._max_position)
 
+        diff = self._current_position - before
+
+        if diff != 0:
+            logging.info(f'Leg {self._index} moved forward {diff}° ' +
+                         '[touching ground]' if self._is_on_ground else '[no ground]')
+        else:
+            logging.debug(f'Leg {self._index} moved forward 0° ' +
+                          '[touching ground]' if self._is_on_ground else '[no ground]' +
+                                                                         ' (--no change--)')
+
         if self._is_on_ground:
-            return self._angular_move_to_distance(self._current_position - before)
+            return self._angular_move_to_distance(diff)
         return 0
 
     def move_backward(self) -> float:
         """
-        Move the leg forward (from the top to the bottom).
+        Move the leg backward (from the top to the bottom).
         If the result is less than the min angular position then increase it to the min.
 
         :return The ground move distance. (arbitrary unit)
@@ -68,8 +91,18 @@ class BobLeg:
 
         self._current_position = max(self._current_position - self._move_size, self._min_position)
 
+        diff = self._current_position - before
+
+        if diff != 0:
+            logging.info(f'Leg {self._index} moved backward {diff}° ' +
+                         '[touching ground]' if self._is_on_ground else '[no ground]')
+        else:
+            logging.debug(f'Leg {self._index} moved backward 0° ' +
+                          '[touching ground]' if self._is_on_ground else '[no ground]' +
+                                                                         ' (--no change--)')
+
         if self._is_on_ground:
-            return self._angular_move_to_distance(self._current_position - before)
+            return self._angular_move_to_distance(diff)
         return 0
 
     def _angular_move_to_distance(self, angular_delta: float):
@@ -98,7 +131,7 @@ class HexaBob:
 
         self._nb_legs_pair = nb_legs_pair
         for i in range(nb_legs_pair):
-            self._legs.append((BobLeg(), BobLeg()))
+            self._legs.append((BobLeg((0, i)), BobLeg((1, i))))
 
     def get_leg(self, index_side: int, index_leg: int) -> BobLeg:
         """
