@@ -43,7 +43,7 @@ poid0 = w[0]
 # print(1+exp(-td/(G.tau[1]))+exp(-2*td/(G.tau[1]))+exp(-3*td/(G.tau[1])))
 # print(td)
 
-S1 = Synapses(G, G, on_pre='v_post += 2*poid0; I_pre = 0; I_post = 2; tau_pre = (10/vitesse)*second ; tau_post = (10/vitesse)*second')
+S1 = Synapses(G, G, on_pre='v_post += 2*poid0', on_post = 'I_pre = 0; I_post = 2; tau_pre = (10/vitesse)*second ; tau_post = (10/vitesse)*second')
 S1.connect(i=0, j=1)
 S1.connect(i = 1, j=0)
 

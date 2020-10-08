@@ -19,7 +19,7 @@ from brian2 import *
 #A partir de la vitesse 6, les sauts synaptiques ne sont plus totalement verticaux
 
 
-vitesse = 2
+vitesse = 4
 droite = 1
 gauche = 2
 
@@ -48,7 +48,7 @@ G.I = [0,0]
 Declencheur.tau = [10]*ms
 
 #La variable tau défini la fréquence de déclenchement, elle doit varier avec la vitesse
-G.tau = 10/vitesse *ms
+G.tau = 10*ms  #a la base, 10/vitesse*ms
 
 ## [Marche neurones]
 
@@ -86,7 +86,7 @@ Gauche_impaire.I = 0
 
 
 #Déclenchement de la marche
-S_declenche = Synapses(Declencheur, G, on_pre='I_post =2; I_pre = 0') #Le fait de mettre I_pre a 0 ici empechera peut être de relancer la simultation a la suite
+S_declenche = Synapses(Declencheur, G, on_pre='I_post =2*vitesse; I_pre = 0') #Le fait de mettre I_pre a 0 ici empechera peut être de relancer la simultation a la suite
 S_declenche.connect(i=0, j=0)
 
 ## [Oscilation]
@@ -94,10 +94,10 @@ S_declenche.connect(i=0, j=0)
 
 #Oscillation
 #a = 0
-S_oscil =Synapses(G, G, on_pre='v_post += 0.2; I_pre = 0; I_post = 2') # on_post = '''I_pre = 0; I_post = 2'''
+S_oscil =Synapses(G, G, on_pre='v_post += 0.2', on_post='I_pre = 0; I_post = 2*vitesse') # on_post = '''I_pre = 0; I_post = 2'''
 S_oscil.connect(i = 0, j=1)
 S_oscil.connect(i = 1, j=0)
-S_oscil.delay = G.th*G.tau*1.5 #/2
+S_oscil.delay = G.th*G.tau*1/G.I #/2
 
 Dec = StateMonitor(Declencheur, 'v', record=True) 
 M = StateMonitor(G, 'v', record=True)
@@ -145,9 +145,9 @@ print(nombre, pic_n1, pic_n2 )
 plot(M.t/ms, M.v[0], "--" ,label='Neuron 1')
 plot(M.t/ms, M.v[1], "--" ,label='Neuron 2')
 #plot(M.t/ms, Dimp.v[0], label = 'Neuron droit impaire')
-plot(M.t/ms, Dpair.v[0], label = 'Neuron droit paire')
+#plot(M.t/ms, Dpair.v[0], label = 'Neuron droit paire')
 #plot(M.t/ms, Gimp.v[0], label = 'Neuron gauche impaire')
-plot(M.t/ms, Gpair.v[0], label = 'Neuron gauche paire')
+#plot(M.t/ms, Gpair.v[0], label = 'Neuron gauche paire')
 
 
 xlabel('Time (ms)')
