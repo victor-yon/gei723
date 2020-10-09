@@ -1,6 +1,6 @@
 import logging
 from math import sqrt, cos
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 
 class BobLeg:
@@ -118,6 +118,7 @@ class BobLeg:
 class HexaBob:
     _nb_legs_pair: int = 3
     _legs: List[Tuple[BobLeg, BobLeg]] = list()
+    _sensors: Dict[str, float] = {'top': 0, 'bottom': 0, 'left': 0, 'right': 0}
 
     def __init__(self, nb_legs_pair: int = 3):
         """
@@ -142,6 +143,31 @@ class HexaBob:
         :return: The leg object.
         """
         return self._legs[index_side][index_leg]
+
+    def sensor_variation(self, position: str, delta: float):
+        """
+        Change the value of a specific sensor.
+        The final value won't be out of [0, 1]
+
+        :param position: The sensor position ('top', 'bottom', 'left', 'right')
+        :param delta: The sensor change, between -1 and 1
+        """
+
+        if position not in ['top', 'bottom', 'left', 'right']:
+            raise Exception(f'Unknown sensor "{position}"')
+
+        sensor: float = self._sensors[position]
+        sensor += delta
+
+        if sensor > 1:
+            logging.debug(f'Max value reached for sensor {position} (1)')
+            self._sensors[position] = 1
+        elif sensor < 0:
+            logging.debug(f'Min value reached for sensor {position} (0)')
+            self._sensors[position] = 0
+        else:
+            logging.info(f'Value changed for sensor {position} : {self._sensors[position]} -> {sensor}')
+            self._sensors[position] = sensor
 
     def __str__(self) -> str:
         """
