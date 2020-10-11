@@ -15,11 +15,11 @@ from brian2 import *
 #vitesse = Avancer.count("a")
 
 #C'est ce paramétre de vitesse qu'il faut faire varier
-#ça fonctionne pour les vitesses 1,2,6,7,8 et 10
-#A partir de la vitesse 6, les sauts synaptiques ne sont plus totalement verticaux
+#ça fonctionne pour les vitesses 5 compris
+#Quand on repart de 0, il ne reste pas à zero jusqu'au saut synaptique ..
 
 
-vitesse = 4
+vitesse = 5
 droite = 1
 gauche = 2
 
@@ -97,7 +97,8 @@ S_declenche.connect(i=0, j=0)
 S_oscil =Synapses(G, G, on_pre='v_post += 0.2', on_post='I_pre = 0; I_post = 2*vitesse') # on_post = '''I_pre = 0; I_post = 2'''
 S_oscil.connect(i = 0, j=1)
 S_oscil.connect(i = 1, j=0)
-S_oscil.delay = G.th*G.tau*1/G.I #/2
+S_oscil.delay = (G.th*G.tau*1/(2*vitesse))*(36/32) #/2
+
 
 Dec = StateMonitor(Declencheur, 'v', record=True) 
 M = StateMonitor(G, 'v', record=True)
@@ -135,7 +136,7 @@ S_droite_paire.connect(i = 1, j=[k for k in range(Npaire)])
 
 ## [Run et affichage]
 
-run(50*ms)
+run(40*ms)
 
 pic_n1 = nombre[0]
 pic_n2 = spikemon.count[1]
