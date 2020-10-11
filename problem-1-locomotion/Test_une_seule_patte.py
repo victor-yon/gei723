@@ -2,11 +2,6 @@ from brian2 import *
 import numpy as np
 import matplotlib
 
-start_scope()
-# Neurones qui génèrent les mouvements
-# -------------------------------------------
-# Constantes
-
 N = 3
 vitesse = 3
 eqs = '''
@@ -15,146 +10,194 @@ I : 1
 tau : second
 th : 1
 '''
+eqs_motor = '''
+dv/dt = -v/tau : 1
+tau : second
+th : 1
+'''
+
 duration = 50*ms
+UP = 0
+DOWN = 1
+AVANT = 2
+ARRIERE = 3
+
+SENSOR_INPUT = -1.5
+BACKWARD_THRESHOLD = 0.5
 
 methode = 'euler'
 
-# Oscillateur
+def oscillateur(eqs, vitesse, methode):
 
-Declencheur = NeuronGroup(1, eqs, threshold='t == 5*ms', reset='v = 0', method=methode)
-G = NeuronGroup(2, eqs, threshold='v>=th', reset='v = 0', method=methode)
-G.th = 0.8
-Declencheur.I = [2]
-G.I = [0, 0]
-Declencheur.tau = [10] * ms
-G.tau = 10/vitesse*ms
+    Declencheur = NeuronGroup(1, eqs, threshold='t == 5*ms', reset='v = 0', method=methode)
+    G = NeuronGroup(2, eqs, threshold='v>=th', reset='v = 0', method=methode)
+    G.th = 0.8
+    Declencheur.I = [2]
+    G.I = [0, 0]
+    Declencheur.tau = 10 * ms
+    G.tau = 10/vitesse*ms
 
-# Déclenchement de la marche
-S_declenche = Synapses(Declencheur, G, on_pre='I_post =2; I_pre = 0')
-S_declenche.connect(i=0, j=0)
+    # Déclenchement de la marche
+    S_declenche = Synapses(Declencheur, G, on_pre='I_post =2; I_pre = 0')
+    S_declenche.connect(i=0, j=0)
 
-# Oscillation
-S_oscil = Synapses(G, G, on_pre='v_post += 0.2; I_pre = 0; I_post = 2')  # on_post = '''I_pre = 0; I_post = 2'''
-S_oscil.connect(i=0, j=1)
-S_oscil.connect(i=1, j=0)
-S_oscil.delay = G.th * G.tau * 1.5  # /2
+    # Oscillation
+    S_oscil = Synapses(G, G, on_pre='v_post += 0.2; I_pre = 0; I_post = 2')
+    S_oscil.connect(i=0, j=1)
+    S_oscil.connect(i=1, j=0)
+    S_oscil.delay = G.th * G.tau * 1.5
 
-State_G = StateMonitor(G, 'v', record = True)
+    return Declencheur, G, S_declenche, S_oscil
 
-# up. Doit lancer une décharge qui met
-#up = NeuronGroup(6, eqs, threshold='v >= th', reset='v = 0', method=methode)
+def build_ground_contact_nn():
+    # ======== Core Network ========
+    # 2 LIF neuron
+    eqs_core = '''
+    dv/dt = (I-v)/tau : 1
+    I : 1
+    tau : second
+    th : 1
+    '''
 
-# # Avant lance une décharge à chaque spike de B
-avant = NeuronGroup(1, eqs, threshold='v >= th', reset='v = 0', method='euler')
-avant.th = 0.8
-avant.tau = 10*ms
-#
-# # Arrière lance des décharges sur l'autre couleur par rapport à avant
-# arriere = NeuronGroup(2 * N, eqs, threshold='v >= th', reset='v = 0', method='method')
-#
-# # Créer compteur Droite, gauche, paire, impaire
-# # Droite impaire
-# CDI_avant = NeuronGroup(1, eqs, threshold='v >= th', reset='v = 0', method='euler')
-# CDI_arriere = NeuronGroup(1, eqs, threshold='v >= th', reset='v = 0', method='euler')
-# # Droite paire
-# CDP_avant = NeuronGroup(1, eqs, threshold='v >= th', reset='v = 0', method='euler')
-# CDP_arriere = NeuronGroup(1, eqs, threshold='v >= th', reset='v = 0', method='euler')
-# # Gauche impaire
-CGI_avant = NeuronGroup(1, eqs, threshold='v >= th', reset='v = 0', method=methode)
-CGI_avant.th = 0.8
-CGI_avant.tau = 10/vitesse*ms
-# CGI_arriere = NeuronGroup(1, eqs, threshold='v >= th', reset='v = 0', method='euler')
-# # Gauche paire
-# CGP_avant = NeuronGroup(1, eqs, threshold='v >= th', reset='v = 0', method='euler')
-# CGP_arriere = NeuronGroup(1, eqs, threshold='v >= th', reset='v = 0', method='euler')
+    core = NeuronGroup(4, eqs_core, threshold='v >= th', reset='v = 0', method='exact')
+    core.I = [-SENSOR_INPUT, SENSOR_INPUT, -SENSOR_INPUT, SENSOR_INPUT]
+    core.tau = 5*ms
+    core.th = [BACKWARD_THRESHOLD, 1 + BACKWARD_THRESHOLD, BACKWARD_THRESHOLD, 1 + BACKWARD_THRESHOLD]
 
-# Vers les neurones commande
-# GI_avant --> avant
-S_G_CGI = Synapses(G, CGI_avant, on_pre = 'v_post = th')# ; I_post = 2')
-S_G_CGI.connect(i = 0, j = 0)
+    # ======== Ground Motor ========
+    # 1 LIF neuron
+    eqs_motor = '''
+    dv/dt = I/tau : 1
+    tau : second
+    th : 1
+    '''
 
-Syn_CGI_avant = Synapses(CGI_avant, avant, on_pre='v_post = th')
-Syn_CGI_avant.connect(i=0, j=0)
-# CGI_arriere --> arriere
-# Syn_CGI_arriere = Synapses(CGI_arriere, arriere, on_pre = 'v_post += th')
-# Syn_CGI_arriere.connect(i = 0, j = np.arange(0, (N+1)//2, 2))
-#
-# # GP_avant
-# Syn_CGP_avant = Synapses(CGP_avant, avant, on_pre = 'v_post += th')
-# Syn_CGP_avant.connect(i = 0, j = np.arange(0, (N+1)//2, 2))
-#
-# # GP_arriere
-# Syn_CGP_arriere = Synapses(CGP_arriere, arriere, on_pre = 'v_post += th')
-# Syn_CGP_arriere.connect(i = 0, j = np.arange(1, (N+1)//2, 2))
-#
-# # DI_avant
-# Syn_CDI_avant = Synapses(CDI_avant, avant, on_pre = 'v_post += th')
-# Syn_CDI_avant.connect(i = 0, j = np.arange(0, (N+1)//2, 2))
-#
-# # DI_arriere
-# Syn_CDI_arriere = Synapses(CDI_arriere, arriere, on_pre = 'v_post += th')
-# Syn_CDI_arriere.connect(i = 0, j = np.arange(0, (N+1)//2, 2))
-#
-# # DP_avant
-# Syn_CDP_avant = Synapses(CDP_avant, avant, on_pre = 'v_post += th')
-# Syn_CDP_avant.connect(i = 0, j = np.arange(1, (N+1)//2, 2))
-#
-# # DP_arriere
-# Syn_CDP_arriere = Synapses(CDP_arriere, arriere, on_pre = 'v_post += th')
-# Syn_CDP_arriere.connect(i = 0, j = np.arange(1, (N+1)//2, 2))
-#
-# Syn_1_CGI_avant = Synapses(G, CGI_avant, on_pre = 'v_post += th')
-# Syn_1_CGI_avant.connect(i = 0, j = 0)
-#
-# Syn_2_CGI_arriere = Synapses(G, CGI_arriere, on_pre = 'v_post += th')
-# Syn_2_CGI_arriere.connect(i = 1, j = 0)
-#
-# Syn_1_CGP_arriere = Synapses(G, arriere, on_pre = 'v_post += th')
-# Syn_1_CGP_arriere.connect(i = 0, j = 0)
-#
-# Syn_2_CGP_avant = Synapses(G, arriere, on_pre = 'v_post += th')
-# Syn_2_CGP_avant.connect(i = 1, j = 0)
-#
-# Syn_1_CDP_arriere = Synapses(G, on_pre = 'v_post += th')
-# Syn_1_CDP_arriere.connect(i = 0, j = 0)
-#
-# Syn_2_CDP_avant = Synapses(G, arriere, on_pre = 'v_post += th')
-# Syn_2_CDP_avant.connect(i = 1, j = 0)
-#
-# Syn_1_CDP_avant = Synapses(G, arriere, on_pre = 'v_post += th')
-# Syn_1_CDP_avant.connect(i = 0, j = 0)
-#
-# Syn_2_CDP_arriere = Synapses(G, arriere, on_pre = 'v_post += th')
-# Syn_2_CDP_arriere.connect(i = 1, j = 0)
+    # motor = NeuronGroup(1, eqs_motor, threshold='v >= th', reset='v = 0', method='exact')
+    # motor.tau = [50] * ms
 
-# M_up = StateMonitor(up, 'v', record=True)
-# spike_up = SpikeMonitor(up)
-#
-M_avant = StateMonitor(avant, 'v', record=True)
-spike_avant = SpikeMonitor(avant)
-M_CGI = StateMonitor(CGI_avant, 'v', record=True)
-spike_CGI = SpikeMonitor(CGI_avant)
-#
-# M_arriere = StateMonitor(arriere, 'v', record=True)
-# spike_arriere = SpikeMonitor(arriere)
-
-# plot(spike_up.t / ms, spike_up.i, '.k')
-# plot(spike_avant.t/ms, spike_avant.i, '.b')
-# plot(spike_arriere.t/ms, spike_avant.i, '.g')
-
-xlabel('instant de décharge')
-ylabel('indice neurone')
-# legend()
-# show()
+    # ======= Core to Motor ========
+    # syn_core_motor = Synapses(core, motors, on_pre='v_post = th')
+    # syn_core_motor.connect(i=[0, 1], j=0)
+    return core #, syn_core_motor
 
 
+def patte(CPG, eqs, methode, groupe):
 
-run(duration)
-print(spike_avant.t)
+    motors = NeuronGroup(4, eqs, threshold='v >= th', reset='v = 0', method=methode)
+    motors.th = 0.8
+    motors.tau = 10*ms
 
-#plot(State_G.t/ms, State_G[1].v)
-# show()
-# plot(M_CGI.t/ms, M_CGI.v[0])
-# plot(M_avant.t/ms, M_avant.v[0])
-scatter(spike_avant.t/ms, spike_avant.i)
-show()
+
+    S = Synapses(CPG, motors, on_pre='v_post = th')
+    S.connect(i = groupe, j = [UP, AVANT])
+    S.connect(i = 1-groupe, j = [DOWN, ARRIERE])
+
+    state = StateMonitor(motors, 'v', record=True)
+    spike = SpikeMonitor(motors)
+
+    return state, spike, S, motors
+
+def patte_avec_capteur(CPG, eqs, eqs_motor, methode, groupe):
+
+    motors = NeuronGroup(2, eqs, threshold='v >= th', reset='v = 0', method=methode)
+    motors.th = 0.8
+    motors.tau = 10*ms
+    up_down = NeuronGroup(2, eqs_motor, threshold='v > 0.1', reset='v = 0', method='exact')
+    up_down.tau = 50*ms
+
+    S = Synapses(CPG, motors, on_pre='v_post = th')
+    S.connect(i = groupe, j = 0) # avant
+    S.connect(i = 1-groupe, j = 1) # arriere
+
+    state = StateMonitor(motors, 'v', record=True)
+    spike = SpikeMonitor(motors)
+    spike_up_down = SpikeMonitor(up_down)
+
+    return state, spike, S, motors, up_down, spike_up_down
+
+def graph(spike, spike_up_down, label):
+    spike_up_t = [x for x, y in zip(spike.t / ms, spike.i) if y == UP]
+    spike_up_i = [y for x, y in zip(spike.t / ms, spike.i) if y == UP]
+
+    spike_down_t = [x for x, y in zip(spike.t / ms, spike.i) if y == DOWN]
+    spike_down_i = [y for x, y in zip(spike.t / ms, spike.i) if y == DOWN]
+
+    spike_avant_t = [x for x, y in zip(spike.t / ms, spike.i) if y == AVANT]
+    spike_avant_i = [y for x, y in zip(spike.t / ms, spike.i) if y == AVANT]
+
+    spike_arriere_t = [x for x, y in zip(spike.t / ms, spike.i) if y == ARRIERE]
+    spike_arriere_i = [y for x, y in zip(spike.t / ms, spike.i) if y == ARRIERE]
+
+    scatter(spike_up_t, spike_up_i, label='UP')
+    scatter(spike_down_t, spike_down_i, label='DOWN')
+    scatter(spike_avant_t, spike_avant_i, label='FRONT')
+    scatter(spike_arriere_t, spike_arriere_i, label='BACK')
+
+    xlabel('instant de décharge')
+    ylabel('indice du neurone')
+    title(label)
+    legend()
+    show()
+    return
+
+def graph_up_down(spike, spike_up_down, label):
+    spike_up_t = np.array([x for x, y in zip(spike_up_down.t / ms, spike_up_down.i) if y == UP])
+    spike_up_i = np.array([y for x, y in zip(spike_up_down.t / ms, spike_up_down.i) if y == UP])+2
+
+    print(spike_up_i)
+    spike_down_t = np.array([x for x, y in zip(spike_up_down.t / ms, spike_up_down.i) if y == DOWN])
+    spike_down_i = np.array([y for x, y in zip(spike_up_down.t / ms, spike_up_down.i) if y == DOWN]) + 2
+
+    spike_avant_t = [x for x, y in zip(spike.t / ms, spike.i) if y == 0]
+    spike_avant_i = [y for x, y in zip(spike.t / ms, spike.i) if y == 0]
+
+    spike_arriere_t = [x for x, y in zip(spike.t / ms, spike.i) if y == 1]
+    spike_arriere_i = [y for x, y in zip(spike.t / ms, spike.i) if y == 1]
+
+    scatter(spike_up_t, spike_up_i, label='UP')
+    scatter(spike_down_t, spike_down_i, label='DOWN')
+    scatter(spike_avant_t, spike_avant_i, label='FRONT')
+    scatter(spike_arriere_t, spike_arriere_i, label='BACK')
+
+    xlabel('instant de décharge')
+    ylabel('indice du neurone')
+    title(label)
+    legend()
+    show()
+
+
+if __name__ == '__main__':
+    start_scope()
+
+    Declencheur, CPG, S_declenche, S_oscil = oscillateur(eqs, vitesse, methode)
+
+    core = build_ground_contact_nn()
+
+    #state, spike, S, motors = patte(CPG, eqs, methode, 0)
+    # state1, spike1, S1, motors1 = patte(CPG, eqs, methode, 1)
+    state, spike, S, motors, up_down, spike_up_down = patte_avec_capteur(CPG, eqs, eqs_motor, methode, 0)
+
+    syn_core_up_down = Synapses(core, up_down, on_pre = 'v_post += 1')
+    syn_core_up_down.connect(i = [0, 1], j = 0)
+    syn_core_up_down.connect(i = [2, 3], j = 1)
+
+    syn_cpg_core = Synapses(CPG, core, on_pre = 'v_post += 1')
+    syn_cpg_core.connect(i = 0, j = [0, 3])
+    syn_cpg_core.connect(i = 1, j = [1, 2])
+
+    syn_CPG_motor = Synapses(CPG, motors, on_pre = 'v_post = th')
+    syn_CPG_motor.connect(condition='i==j')
+
+    # syn_core_motor = Synapses(core, motors, on_pre = 'v_post = th')
+    # syn_core_motor.connect(i = [0, 1], j = UP)
+    # syn_core_motor.connect(i = [2, 3], j = DOWN)
+
+    # syn_core_motor1 = Synapses(core, motors1, on_pre = 'v_post = th')
+    # syn_core_motor1.connect(i = [0, 2], j = UP)
+    # syn_core_motor1.connect(i = [1, 3], j = DOWN)
+
+
+    run(duration)
+
+    graph_up_down(spike, spike_up_down, 'patte impaire')
+    #graph(spike1, 'patte paire')
