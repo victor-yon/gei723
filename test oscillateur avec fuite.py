@@ -24,10 +24,9 @@ start_scope()
 ## [Equation]
 
 eqs = '''
-dv/dt = (I-v)/tau : 1
+dv/dt = (I-v)/tau : 1  (unless refractory)
 td : second
 I : 1
-Icircuit : 1
 tau : second
 th : 1
 '''
@@ -36,7 +35,7 @@ th : 1
 ## [Groupe de neurone, declencheur et oscillateur]
 
 Declencheur = NeuronGroup(1, eqs, threshold= 't == 5*ms', reset='v = 0', method='euler')
-G = NeuronGroup(2, eqs, threshold= 'v >= th', reset= 'v = 0', method='exact')
+G = NeuronGroup(2, eqs, threshold= 'v >= th', reset= 'v = 0', refractory=0.5*ms , method='exact')
 
 Declencheur.I = [2]
 Icircuit = 2
@@ -53,7 +52,7 @@ td = -1*10*ms*log(1-0.8/(Icircuit*vitesse))   #-1*G.tau*log(1-G.th/(2*vitesse))
 ## [Connexion neurone déclencheur oscillation]
 
 #Déclenchement de la marche
-S_declenche = Synapses(Declencheur, G, on_pre='I_post = 2*vitesse; I_pre = 0')
+S_declenche = Synapses(Declencheur, G, on_pre='I_post = Icircuit*vitesse; I_pre = 0')
 S_declenche.connect(i=0, j=0)
 
 ## [Oscillation]
