@@ -27,7 +27,8 @@ def leg_nn(direction_a, direction_b, input_up, input_down):
     return motors, syn_cpg_motor_a, syn_cpg_motor_b, syn_up_motor, syn_down_motor
 
 
-def monitor_leg(motors):
+def monitor_leg(leg_nn):
+    motors, _, _, _, _ = leg_nn
     return SpikeMonitor(motors)
 
 

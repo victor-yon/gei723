@@ -41,13 +41,17 @@ def build_ground_contact_nn(cpg, front_sensor_input, inverted):
     return output, core_main, syn_core_motor, syn_cpg_core
 
 
-def monitor_ground_contact(output, core_main):
+def monitor_ground_contact(direction_nn):
+    output, core_main, _, _ = direction_nn
+
     state_mon_core = StateMonitor(core_main, 'v', record=True)
     state_mon_output = StateMonitor(output, 'v', record=True)
     return state_mon_core, state_mon_output
 
 
-def plot_monitor_ground_contact(state_mon_core, state_mon_output, front_sensor_input):
+def plot_monitor_ground_contact(m_ground_contact, front_sensor_input):
+    state_mon_core, state_mon_output = m_ground_contact
+
     fig, (ax1, ax2) = plt.subplots(2)
     ax1.plot(state_mon_core.t / ms, state_mon_core.v[0], color='blue', label='Core 0')
     ax1.plot(state_mon_core.t / ms, state_mon_core.v[1], color='green', label='Core 1')

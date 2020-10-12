@@ -43,13 +43,14 @@ def build_cpg_nn(back_sensor_value):
     return core_nn, trigger, syn_trigger_core, syn_core
 
 
-def monitor_cpg(core_nn):
+def monitor_cpg(cpg_nn):
+    core_nn, _, _, _ = cpg_nn
     return StateMonitor(core_nn, 'v', record=True)
 
 
-def plot_monitor_cpg(monitor, back_sensor_input):
-    plot(monitor.t / ms, monitor.v[0], label='Neuron 1')
-    plot(monitor.t / ms, monitor.v[1], label='Neuron 2')
+def plot_monitor_cpg(m_cpg, back_sensor_input):
+    plot(m_cpg.t / ms, m_cpg.v[0], label='Neuron 1')
+    plot(m_cpg.t / ms, m_cpg.v[1], label='Neuron 2')
     xlabel('Time (ms)')
     ylabel('v')
     title(f"CPG - Capteur bas à {back_sensor_input}A")

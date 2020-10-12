@@ -58,13 +58,17 @@ def build_direction_nn(cpg_core, group, side_sensor_value):
     return core_main, core_inhib, syn_main_inhib, syn_cpg_core, syn_cpg_inhib, syn_cpg_inhib_rest
 
 
-def monitor_direction(core_main, core_inhib):
+def monitor_direction(direction_nn):
+    core_main, core_inhib, _, _, _, _ = direction_nn
+
     state_mon_main = StateMonitor(core_main, 'v', record=True)
     state_mon_inhib = StateMonitor(core_inhib, ('v', 'v_bis'), record=True)
     return state_mon_main, state_mon_inhib
 
 
-def plot_monitor_direction(state_mon_main, state_mon_inhib, side, side_sensor_value):
+def plot_monitor_direction(m_direction, side, side_sensor_value):
+    state_mon_main, state_mon_inhib = m_direction
+
     plot(state_mon_main.t / ms, state_mon_main.v[0], color='blue', label='Direction')
     plot(state_mon_inhib.t / ms, state_mon_inhib.v[0] + state_mon_inhib.v_bis[0], color='red', label='Direction Inhib')
     xlabel('Time (ms)')

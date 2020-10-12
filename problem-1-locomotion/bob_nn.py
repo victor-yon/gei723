@@ -1,8 +1,8 @@
 from brian2 import *
 
 from cpg_nn import monitor_cpg, build_cpg_nn, plot_monitor_cpg
-from direction_nn import build_direction_nn
-from ground_contact_nn import build_ground_contact_nn
+from direction_nn import build_direction_nn, monitor_direction, plot_monitor_direction, LEFT
+from ground_contact_nn import build_ground_contact_nn, monitor_ground_contact, plot_monitor_ground_contact
 from leg_nn import leg_nn, monitor_leg, plot_monitor_legs
 
 
@@ -23,103 +23,101 @@ def build_and_run_nn(duration: int = 300, nb_leg_pair: int = 3, sensor_back: flo
 
     # ======================= CPG =====================
     # The central pattern generator
-    cpg_core, cpg_trigger, cpg_syn_trigger_core, cpg_syn_core = build_cpg_nn(sensor_back)
-    nn.add(cpg_core, cpg_trigger, cpg_syn_trigger_core, cpg_syn_core)
-    m_cpg = monitor_cpg(cpg_core)
+    cpg_nn = build_cpg_nn(sensor_back)
+    nn.add(cpg_nn)
+    cpg_core = cpg_nn[0]  # Keep core group for modules link
+    # Monitor
+    m_cpg = monitor_cpg(cpg_nn)
     nn.add(m_cpg)
 
     # ==================== Direction ==================
+    # For right and left rotation
     # 4 direction sub-network : 2 for each side
+
     # Left 0
-    dir_main_l0, dir_inhib_l0, dir_syn_main_inhib_l0, dir_syn_cpg_core_l0, dir_syn_cpg_inhib_l0, \
-    dir_syn_cpg_inhib_rest_l0 = build_direction_nn(cpg_core, 0, sensor_left)
-    nn.add(dir_main_l0, dir_inhib_l0, dir_syn_main_inhib_l0, dir_syn_cpg_core_l0, dir_syn_cpg_inhib_l0,
-           dir_syn_cpg_inhib_rest_l0)
-    # m_dir_main_left_0, m_dir_inhib_left_0 = monitor_direction(dir_main_l0, dir_inhib_l0)
+    direction_nn_left_0 = build_direction_nn(cpg_core, 0, sensor_left)
+    nn.add(direction_nn_left_0)
+    direction_left_0 = direction_nn_left_0[0]  # Keep main neurone for modules link
+    # Monitors
+    m_direction_left_0 = monitor_direction(direction_nn_left_0)
+    nn.add(m_direction_left_0)
 
     # Left 1
-    dir_main_l1, dir_inhib_l1, dir_syn_main_inhib_l1, dir_syn_cpg_core_l1, dir_syn_cpg_inhib_l1, \
-    dir_syn_cpg_inhib_rest_l1 = build_direction_nn(cpg_core, 1, sensor_left)
-    nn.add(dir_main_l1, dir_inhib_l1, dir_syn_main_inhib_l1, dir_syn_cpg_core_l1, dir_syn_cpg_inhib_l1,
-           dir_syn_cpg_inhib_rest_l1)
-    # m_dir_main_left_1, m_dir_inhib_left_1 = monitor_direction(dir_main_l1, dir_inhib_l1)
+    direction_nn_left_1 = build_direction_nn(cpg_core, 1, sensor_left)
+    direction_left_1 = direction_nn_left_1[0]  # Keep main neurone for modules link
+    nn.add(direction_nn_left_1)
 
     # Right 0
-    dir_main_r0, dir_inhib_r0, dir_syn_main_inhib_r0, dir_syn_cpg_core_r0, dir_syn_cpg_inhib_r0, \
-    dir_syn_cpg_inhib_rest_r0 = build_direction_nn(cpg_core, 0, sensor_right)
-    nn.add(dir_main_r0, dir_inhib_r0, dir_syn_main_inhib_r0, dir_syn_cpg_core_r0, dir_syn_cpg_inhib_r0,
-           dir_syn_cpg_inhib_rest_r0)
-    # m_dir_right_0 = monitor_direction(dir_main_r0, dir_inhib_r0)
+    direction_nn_right_0 = build_direction_nn(cpg_core, 0, sensor_right)
+    direction_right_0 = direction_nn_right_0[0]  # Keep main neurone for modules link
+    nn.add(direction_nn_right_0)
 
     # Right 1
-    dir_main_r1, dir_inhib_r1, dir_syn_main_inhib_r1, dir_syn_cpg_core_r1, dir_syn_cpg_inhib_r1, \
-    dir_syn_cpg_inhib_rest_r1 = build_direction_nn(cpg_core, 1, sensor_right)
-    nn.add(dir_main_r1, dir_inhib_r1, dir_syn_main_inhib_r1, dir_syn_cpg_core_r1, dir_syn_cpg_inhib_r1,
-           dir_syn_cpg_inhib_rest_r1)
-    # m_dir_right_1 = monitor_direction(dir_main_r1, dir_inhib_r1)
+    direction_nn_right_1 = build_direction_nn(cpg_core, 1, sensor_right)
+    direction_right_1 = direction_nn_right_1[0]  # Keep main neurone for modules link
+    nn.add(direction_nn_right_1)
 
     # ================= Ground Contact ================
+    # For up and down the leg
     # 2 ground contact module (up output & down output)
-    g_output_0, g_core_0, g_syn_core_motor_0, g_syn_cpg_core_0 = \
-        build_ground_contact_nn(cpg_core, sensor_front, inverted=False)
-    nn.add(g_output_0, g_core_0, g_syn_core_motor_0, g_syn_cpg_core_0)
-    # g_state_mon_core_0, g_state_mon_output_0 = monitor_ground_contact(g_output_0, g_core_0)
-    g_output_1, g_core_1, g_syn_core_motor_1, g_syn_cpg_core_1 = \
-        build_ground_contact_nn(cpg_core, sensor_front, inverted=True)
-    nn.add(g_output_1, g_core_1, g_syn_core_motor_1, g_syn_cpg_core_1)
+
+    ground_contact_nn_0 = build_ground_contact_nn(cpg_core, sensor_front, inverted=False)
+    ground_output_0 = ground_contact_nn_0[0]  # Keep output neurone for modules link
+    nn.add(ground_contact_nn_0)
+    # Monitors
+    m_ground_contact_nn_0 = monitor_ground_contact(ground_contact_nn_0)
+    nn.add(m_ground_contact_nn_0)
+
+    ground_contact_nn_1 = build_ground_contact_nn(cpg_core, sensor_front, inverted=True)
+    ground_output_1 = ground_contact_nn_1[0]  # Keep output neurone for modules link
+    nn.add(ground_contact_nn_1)
 
     # ====================== Legs =====================
-    legs_left = list()
     monitor_legs_left = list()
-    legs_right = list()
     monitor_legs_right = list()
     for i in range(nb_leg_pair):
 
         # ----------- Left -----------
+        leg_l = None
         # Left even
         if i % 2 == 0:
-            leg_motors_l, syn_cpg_motor_a_l, syn_cpg_motor_b_l, syn_up_motor_l, syn_down_motor_l = \
-                leg_nn(dir_main_l0, dir_main_l1, g_output_0, g_output_1)
+            leg_l = leg_nn(direction_left_0, direction_left_1, ground_output_0, ground_output_1)
         # Left odd
         else:
-            leg_motors_l, syn_cpg_motor_a_l, syn_cpg_motor_b_l, syn_up_motor_l, syn_down_motor_l = \
-                leg_nn(dir_main_l1, dir_main_l0, g_output_1, g_output_0)
+            leg_l = leg_nn(direction_left_1, direction_left_0, ground_output_1, ground_output_0)
 
         # Save left
-        nn.add(leg_motors_l, syn_cpg_motor_a_l, syn_cpg_motor_b_l, syn_up_motor_l, syn_down_motor_l)
-        legs_left.append([leg_motors_l, syn_cpg_motor_a_l, syn_cpg_motor_b_l, syn_up_motor_l, syn_down_motor_l])
+        nn.add(leg_l)
         # Monitor the 2 first legs of each side (all other are doing the same)
         if i < 2:
-            m_leg_l = monitor_leg(leg_motors_l)
+            m_leg_l = monitor_leg(leg_l)
             monitor_legs_left.append(m_leg_l)
             nn.add(m_leg_l)
 
         # ---------- Right -----------
+        leg_r = None
         # Right even
         if i % 2 == 0:
-            leg_motors_r, syn_cpg_motor_a_r, syn_cpg_motor_b_r, syn_up_motor_r, syn_down_motor_r = \
-                leg_nn(dir_main_r1, dir_main_r0, g_output_1, g_output_0)
+            leg_r = leg_nn(direction_right_1, direction_right_0, ground_output_1, ground_output_0)
         # Right odd
         else:
-            leg_motors_r, syn_cpg_motor_a_r, syn_cpg_motor_b_r, syn_up_motor_r, syn_down_motor_r = \
-                leg_nn(dir_main_r0, dir_main_r1, g_output_0, g_output_1)
+            leg_r = leg_nn(direction_right_0, direction_right_1, ground_output_0, ground_output_1)
 
         # Save right
-        nn.add(leg_motors_r, syn_cpg_motor_a_r, syn_cpg_motor_b_r, syn_up_motor_r, syn_down_motor_r)
-        legs_right.append([leg_motors_r, syn_cpg_motor_a_r, syn_cpg_motor_b_r, syn_up_motor_r, syn_down_motor_r])
+        nn.add(leg_r)
         # Monitor the 2 first legs of each side (all other are doing the same)
         if i < 2:
-            m_leg_r = monitor_leg(leg_motors_r)
+            m_leg_r = monitor_leg(leg_r)
             monitor_legs_right.append(m_leg_r)
             nn.add(m_leg_r)
 
     nn.run(duration * ms)
 
-    # plot_monitor_direction(m_dir_main_left_0, m_dir_inhib_left_0, LEFT, sensor_left)
     plot_monitor_cpg(m_cpg, sensor_back)
+    plot_monitor_direction(m_direction_left_0, LEFT, sensor_left)
+    plot_monitor_ground_contact(m_ground_contact_nn_0, sensor_front)
     plot_monitor_legs(monitor_legs_left + monitor_legs_right, ['Gauche 1', 'Gauche 2', 'Droit 1', 'Droit 2'],
                       time_offest=150)
-    # plot_monitor_ground_contact(g_state_mon_core_0, g_state_mon_output_0, sensor_front)
 
 
 if __name__ == '__main__':
