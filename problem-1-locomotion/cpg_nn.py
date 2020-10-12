@@ -1,7 +1,9 @@
 from brian2 import *
 
+SPIKE_TRAIN_SIZE = 4
 
-def cpg_nn(back_sensor_value):
+
+def build_cpg_nn(back_sensor_value):
     # 3 Neurones : 1 Pour déclencher le signal, 2 qui oscillent
     # Convert the sensor input [0,1] into speed [1,5]
     speed = 1 + (back_sensor_value * 4)
@@ -38,7 +40,7 @@ def cpg_nn(back_sensor_value):
     syn_core.connect(i=1, j=0)
     syn_core.delay = core_nn.th * core_nn.tau * 1.5
 
-    return trigger, core_nn, syn_trigger_core, syn_core
+    return core_nn, trigger, syn_trigger_core, syn_core
 
 
 def monitor_cpg(core_nn):

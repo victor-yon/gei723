@@ -24,9 +24,7 @@ def monitor_leg(motors):
     return SpikeMonitor(motors)
 
 
-def plot_monitor_leg(monitor):
-    print(list(zip(monitor.i, monitor.t)))
-
+def plot_monitor_leg(monitor, leg_name):
     spike_time_forward = [t for i, t in zip(monitor.i, monitor.t) if i == FORWARD]
     spike_time_backward = [t for i, t in zip(monitor.i, monitor.t) if i == BACKWARD]
     spike_time_up = [t for i, t in zip(monitor.i, monitor.t) if i == UP]
@@ -39,6 +37,6 @@ def plot_monitor_leg(monitor):
 
     plt.xlabel('Instant de décharge')
     plt.ylabel('Indice du neurone')
-    plt.title('Neurones moteurs d\'une patte')
+    plt.title(f'Neurones moteurs de la patte {leg_name}')
     plt.legend()
     plt.show()
