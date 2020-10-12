@@ -5,13 +5,13 @@ from direction_nn import build_direction_nn, monitor_direction, LEFT, plot_monit
 from ground_contact_nn import build_ground_contact_nn, monitor_ground_contact, plot_monitor_ground_contact
 from leg_nn import leg_nn, monitor_leg, plot_monitor_leg
 
-DURATION = 100 * ms
+DURATION = 300 * ms
 
 # The value of Bob's sensor. Between 0 and 1 included.
-SENSOR_BACK = 1
+SENSOR_BACK = 0.2
 SENSOR_LEFT = 0
 SENSOR_RIGHT = 0
-SENSOR_FRONT = 0.4
+SENSOR_FRONT = 0
 
 if __name__ == '__main__':
     start_scope()
@@ -52,9 +52,11 @@ if __name__ == '__main__':
         build_ground_contact_nn(cpg_core, SENSOR_FRONT, inverted=True)
 
     # ====================== Legs =====================
-    leg_motors_l0, syn_cpg_motor_a_l0, syn_cpg_motor_b_l0 = leg_nn(dir_main_l0, dir_main_l1)
+    leg_motors_l0, syn_cpg_motor_a_l0, syn_cpg_motor_b_l0, syn_up_motor_l0, syn_down_motor_l0 =\
+        leg_nn(dir_main_l0, dir_main_l1, g_output_0, g_output_1)
     m_leg_l0 = monitor_leg(leg_motors_l0)
-    leg_motors_r0, syn_cpg_motor_a_r0, syn_cpg_motor_b_r0 = leg_nn(dir_main_r1, dir_main_r0)
+    leg_motors_r0, syn_cpg_motor_a_r0, syn_cpg_motor_b_r0, syn_up_motor_r0, syn_down_motor_r0 =\
+        leg_nn(dir_main_r1, dir_main_r0, g_output_1, g_output_0)
     m_leg_r0 = monitor_leg(leg_motors_r0)
 
     run(DURATION)

@@ -7,7 +7,7 @@ UP = 2
 DOWN = 3
 
 
-def leg_nn(direction_a, direction_b):
+def leg_nn(direction_a, direction_b, input_up, input_down):
     motors = NeuronGroup(4, 'v : 1', threshold='v > 0.8', reset='v = 0', method='exact')
 
     # ============== Direction to Motors ==============
@@ -15,10 +15,14 @@ def leg_nn(direction_a, direction_b):
     syn_cpg_motor_a.connect(i=0, j=FORWARD)
     syn_cpg_motor_b = Synapses(direction_b, motors, on_pre='v_post += 1')
     syn_cpg_motor_b.connect(i=0, j=BACKWARD)
-    # syn_cpg_motor.connect(i=group, j=UP)
-    # syn_cpg_motor.connect(i=1 - group, j=DOWN)
 
-    return motors, syn_cpg_motor_a, syn_cpg_motor_b
+    # ============ Ground Contact to Motors ===========
+    syn_up_motor = Synapses(input_up, motors, on_pre='v_post += 1')
+    syn_up_motor.connect(i=0, j=UP)
+    syn_down_motor = Synapses(input_down, motors, on_pre='v_post += 1')
+    syn_down_motor.connect(i=0, j=DOWN)
+
+    return motors, syn_cpg_motor_a, syn_cpg_motor_b, syn_up_motor, syn_down_motor
 
 
 def monitor_leg(motors):
