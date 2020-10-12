@@ -34,7 +34,7 @@ def build_ground_contact_nn(cpg, front_sensor_input, inverted):
 
     # =================== CPG to Core =================
     syn_cpg_core = Synapses(cpg, core_main, on_pre='v_post += 1')
-    idx = 0 if inverted else 1
+    idx = 1 if inverted else 0
     syn_cpg_core.connect(i=idx, j=0)
     syn_cpg_core.connect(i=1 - idx, j=1)
 

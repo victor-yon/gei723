@@ -1,5 +1,7 @@
+from typing import List
+
 import matplotlib.pyplot as plt
-from brian2 import NeuronGroup, Synapses, SpikeMonitor
+from brian2 import NeuronGroup, Synapses, SpikeMonitor, ms
 
 FORWARD = 0
 BACKWARD = 1
@@ -29,19 +31,27 @@ def monitor_leg(motors):
     return SpikeMonitor(motors)
 
 
-def plot_monitor_leg(monitor, leg_name):
-    spike_time_forward = [t for i, t in zip(monitor.i, monitor.t) if i == FORWARD]
-    spike_time_backward = [t for i, t in zip(monitor.i, monitor.t) if i == BACKWARD]
-    spike_time_up = [t for i, t in zip(monitor.i, monitor.t) if i == UP]
-    spike_time_down = [t for i, t in zip(monitor.i, monitor.t) if i == DOWN]
+def plot_monitor_legs(monitors: list, leg_names: List[str], time_offest: float = 0):
+    nb = len(monitors)
+    fig, subplots = plt.subplots(nb, figsize=(8, nb * 1.5 + 2))
 
-    plt.scatter(spike_time_forward, [FORWARD] * len(spike_time_forward), label='FORWARD')
-    plt.scatter(spike_time_backward, [BACKWARD] * len(spike_time_backward), label='BACKWARD')
-    plt.scatter(spike_time_up, [UP] * len(spike_time_up), label='UP')
-    plt.scatter(spike_time_down, [DOWN] * len(spike_time_down), label='DOWN')
+    for m, s, n in zip(monitors, subplots, leg_names):
+        spike_time_forward = [t for i, t in zip(m.i, m.t / ms) if i == FORWARD and t >= time_offest]
+        spike_time_backward = [t for i, t in zip(m.i, m.t / ms) if i == BACKWARD and t >= time_offest]
+        spike_time_up = [t for i, t in zip(m.i, m.t / ms) if i == UP and t >= time_offest]
+        spike_time_down = [t for i, t in zip(m.i, m.t / ms) if i == DOWN and t >= time_offest]
 
-    plt.xlabel('Instant de décharge')
-    plt.ylabel('Indice du neurone')
-    plt.title(f'Neurones moteurs de la patte {leg_name}')
-    plt.legend()
+        s.scatter(spike_time_forward, [1] * len(spike_time_forward), label='Avance patte', marker='>', color='tab:blue')
+        s.scatter(spike_time_backward, [1] * len(spike_time_backward), label='Recule patte', marker='<',
+                  color='tab:orange')
+        s.scatter(spike_time_up, [0] * len(spike_time_up), label='Lève patte', marker='^', color='tab:green')
+        s.scatter(spike_time_down, [0] * len(spike_time_down), label='Baisse patte', marker='v', color='tab:red')
+
+        s.set_title(n)
+
+    plt.setp(subplots, yticks=[0, 1], yticklabels=['Lever\nBaisser', 'Avancer\nReculer'], ylim=[-0.5, 1.5])
+    plt.suptitle(f'Neurones moteurs des {len(monitors)} premières pattes', fontsize=14)
+    plt.xlabel('Instant de décharge (ms)')
+    handles, labels = subplots[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper right')
     plt.show()
