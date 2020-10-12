@@ -6,7 +6,7 @@ LEFT = 0
 RIGHT = 1
 
 
-def build_direction_nn(cpg_core, side, side_sensor_value):
+def build_direction_nn(cpg_core, group, side_sensor_value):
     # ==================== Core Main ==================
     # 1 IF neuron
     eqs_core = '''
@@ -42,18 +42,18 @@ def build_direction_nn(cpg_core, side, side_sensor_value):
 
     # ================ CPG to Direction ===============
     syn_cpg_core = Synapses(cpg_core, core_main, on_pre='v_post += 1')
-    syn_cpg_core.connect(i=side, j=0)
+    syn_cpg_core.connect(i=group, j=0)
     # Delay required because if the 2 pulse (-1 and +1) arrived at the same time only one is take into account
     syn_cpg_core.delay = 2 * ms
 
     # ================== CPG to Inhib =================
     syn_cpg_inhib = Synapses(cpg_core, core_inhib, 'w : 1', on_pre='v_bis_post += w')
-    syn_cpg_inhib.connect(i=side, j=0)
+    syn_cpg_inhib.connect(i=group, j=0)
     syn_cpg_inhib.w = 1 / SPIKE_TRAIN_SIZE
 
     # =============== CPG to Inhib Rest ===============
     syn_cpg_inhib_rest = Synapses(cpg_core, core_inhib, on_pre='v_bis_post = 0')
-    syn_cpg_inhib_rest.connect(i=1 - side, j=0)
+    syn_cpg_inhib_rest.connect(i=1 - group, j=0)
 
     return core_main, core_inhib, syn_main_inhib, syn_cpg_core, syn_cpg_inhib, syn_cpg_inhib_rest
 
