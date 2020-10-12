@@ -6,7 +6,7 @@ N = 3
 
 vitesse = 1
 droite = 1
-gauche = 2
+gauche = 1
 
 eqs = '''
 dv/dt = I/tau : 1
@@ -26,12 +26,7 @@ DOWN = 1
 AVANT = 2
 ARRIERE = 3
 
-# GI = 0
-# GP = 1
-# DI = 2
-# DP = 3
-
-SENSOR_INPUT = 1
+SENSOR_INPUT = 0
 BACKWARD_THRESHOLD = 0.4
 
 methode = 'euler'
@@ -58,6 +53,7 @@ def oscillateur(eqs, vitesse, methode):
 
     return Declencheur, G, S_declenche, S_oscil
 
+# le core contient 4 éléments, 2 pour up et 2 pour down.
 def build_ground_contact_nn():
     # ======== Core Network ========
     # 2 LIF neuron
@@ -81,45 +77,9 @@ def build_ground_contact_nn():
     # ======= Core to Motor ========
     # syn_core_motor = Synapses(core, motors, on_pre='v_post = th')
     # syn_core_motor.connect(i=[0, 1], j=0)
-    return core #, syn_core_motor
+    return core
 
-
-def patte(CPG, eqs, methode, groupe):
-
-    motors = NeuronGroup(4, eqs, threshold='v >= th', reset='v = 0', method=methode)
-    motors.th = 0.8
-    motors.tau = 10*ms
-
-
-    S = Synapses(CPG, motors, on_pre='v_post = th')
-    S.connect(i = groupe, j = [UP, AVANT])
-    S.connect(i = 1-groupe, j = [DOWN, ARRIERE])
-
-    state = StateMonitor(motors, 'v', record=True)
-    spike = SpikeMonitor(motors)
-
-    return state, spike, S, motors
-
-def patte_avec_capteur(CPG, eqs, eqs_motor, methode, groupe):
-
-    motors = NeuronGroup(2, eqs, threshold='v >= th', reset='v = 0', method=methode)
-    motors.th = 0.8
-    motors.tau = 10*ms
-    up_down = NeuronGroup(2, eqs_motor, threshold='v > 0.1', reset='v = 0', method='exact')
-    #up_down.th = 0.5
-    up_down.tau = 50*ms
-
-    # S = Synapses(CPG, motors, on_pre='v_post = th')
-    # S.connect(i = groupe, j = 0) # avant
-    # S.connect(i = 1-groupe, j = 1) # arriere
-
-    state = StateMonitor(motors, 'v', record=True)
-    spike = SpikeMonitor(motors)
-    state_up_down = StateMonitor(up_down, 'v', record=True)
-    spike_up_down = SpikeMonitor(up_down)
-
-    return state, spike, motors, up_down, spike_up_down
-
+# Le groupe direction créé les groupes qui modulent le nombre de spike qui se rendent au neurones moteurs
 def groupe_direction(CPG, eqs, vitesse, motors, up_down,methode):
     GI = NeuronGroup(1, eqs, threshold='v>= th', reset='v = 0', method=methode)
     GI.th = 0.8
@@ -168,32 +128,29 @@ def groupe_direction(CPG, eqs, vitesse, motors, up_down,methode):
 
     return GI, GP, DI, DP, S_GI, S_GP, S_GI_motors, S_GP_motors, State_motors, spike_motors, State_GI, State_GP
 
+# Créé une seule patte par appel de la fonction
+def patte_avec_capteur(CPG, eqs, eqs_motor, core, methode, groupe):
+
+    motors = NeuronGroup(2, eqs, threshold='v >= th', reset='v = 0', method=methode)
+    motors.th = 0.8
+    motors.tau = 10*ms
+    up_down = NeuronGroup(2, eqs_motor, threshold='v > 0.1', reset='v = 0', method='exact')
+    up_down.tau = 50*ms
+
+    syn_core_up_down = Synapses(core, up_down, on_pre = 'v_post += 1')
+    syn_core_up_down.connect(i = [0, 1], j = 0)
+    syn_core_up_down.connect(i = [2, 3], j = 1)
+    syn_cpg_core = Synapses(CPG, core, on_pre = 'v_post += 1')
+    syn_cpg_core.connect(i = 0, j = [0, 3])
+    syn_cpg_core.connect(i = 1, j = [1, 2])
+
+    state = StateMonitor(motors, 'v', record=True)
+    spike = SpikeMonitor(motors)
+    spike_up_down = SpikeMonitor(up_down)
+
+    return state, spike, motors, up_down, spike_up_down, syn_cpg_core, syn_core_up_down
+
 def graph(spike, spike_up_down, label):
-    spike_up_t = [x for x, y in zip(spike.t / ms, spike.i) if y == UP]
-    spike_up_i = [y for x, y in zip(spike.t / ms, spike.i) if y == UP]
-
-    spike_down_t = [x for x, y in zip(spike.t / ms, spike.i) if y == DOWN]
-    spike_down_i = [y for x, y in zip(spike.t / ms, spike.i) if y == DOWN]
-
-    spike_avant_t = [x for x, y in zip(spike.t / ms, spike.i) if y == AVANT]
-    spike_avant_i = [y for x, y in zip(spike.t / ms, spike.i) if y == AVANT]
-
-    spike_arriere_t = [x for x, y in zip(spike.t / ms, spike.i) if y == ARRIERE]
-    spike_arriere_i = [y for x, y in zip(spike.t / ms, spike.i) if y == ARRIERE]
-
-    scatter(spike_up_t, spike_up_i, label='UP')
-    scatter(spike_down_t, spike_down_i, label='DOWN')
-    scatter(spike_avant_t, spike_avant_i, label='FRONT')
-    scatter(spike_arriere_t, spike_arriere_i, label='BACK')
-
-    xlabel('instant de décharge')
-    ylabel('indice du neurone')
-    title(label)
-    legend()
-    show()
-    return
-
-def graph_up_down(spike, spike_up_down, label):
     spike_up_t = np.array([x for x, y in zip(spike_up_down.t / ms, spike_up_down.i) if y == UP])
     spike_up_i = np.array([y for x, y in zip(spike_up_down.t / ms, spike_up_down.i) if y == UP])+2
 
@@ -218,41 +175,13 @@ def graph_up_down(spike, spike_up_down, label):
     legend()
     show()
 
-def graph_potentiel():
-    return
-
-
 if __name__ == '__main__':
     start_scope()
-
     Declencheur, CPG, S_declenche, S_oscil = oscillateur(eqs, vitesse, methode)
-
     core = build_ground_contact_nn()
 
-    #state, spike, S, motors = patte(CPG, eqs, methode, 0)
-    # state1, spike1, S1, motors1 = patte(CPG, eqs, methode, 1)
-    state, spike, motors, up_down, spike_up_down = patte_avec_capteur(CPG, eqs, eqs_motor, methode, 0)
+    state, spike, motors, up_down, spike_up_down, syn_cpg_core, syn_core_up_down = patte_avec_capteur(CPG, eqs, eqs_motor, methode, 0)
     GI, GP, DI, DP, S_GI, S_GP, S_GI_motors, S_GP_motors, State_motors, spike_motors, State_GI, State_GP = groupe_direction(CPG, eqs, vitesse, motors, up_down, methode)
-
-    syn_core_up_down = Synapses(core, up_down, on_pre = 'v_post += 1')
-    syn_core_up_down.connect(i = [0, 1], j = 0)
-    syn_core_up_down.connect(i = [2, 3], j = 1)
-    print(State_GI.v)
-    syn_cpg_core = Synapses(CPG, core, on_pre = 'v_post += 1')
-    syn_cpg_core.connect(i = 0, j = [0, 3])
-    syn_cpg_core.connect(i = 1, j = [1, 2])
-
-    # syn_CPG_motor = Synapses(CPG, motors, on_pre = 'v_post = th')
-    # syn_CPG_motor.connect(condition='i==j')
-
-    # syn_core_motor = Synapses(core, motors, on_pre = 'v_post = th')
-    # syn_core_motor.connect(i = [0, 1], j = UP)
-    # syn_core_motor.connect(i = [2, 3], j = DOWN)
-
-    # syn_core_motor1 = Synapses(core, motors1, on_pre = 'v_post = th')
-    # syn_core_motor1.connect(i = [0, 2], j = UP)
-    # syn_core_motor1.connect(i = [1, 3], j = DOWN)
     run(duration)
 
-    graph_up_down(spike, spike_up_down, 'patte impaire sans entrée capteur')
-    #graph(spike1, 'patte paire')
+    graph(spike, spike_up_down, 'patte gauche impaire sans entrée capteur')
