@@ -6,7 +6,8 @@ SPEED_CONSTANT = 31.25 * ms
 def build_cpg_nn(back_sensor_value):
     # 3 Neurones : 1 Pour déclencher le signal, 2 qui oscillent
     # Convert the sensor input [0,1] into speed [0,5]
-    speed = back_sensor_value * 5
+    # Add 0.1 to avoid 0
+    speed = back_sensor_value * 5 + 0.1
 
     eqs = '''
     dv/dt = I/tau : 1 

@@ -1,6 +1,10 @@
 import logging
 from math import sqrt, cos
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Callable
+
+from brian2 import Network, ms
+
+from bob_nn import build_nn
 
 
 class BobLeg:
@@ -118,7 +122,9 @@ class BobLeg:
 class HexaBob:
     _nb_legs_pair: int = 3
     _legs: List[Tuple[BobLeg, BobLeg]] = list()
-    _sensors: Dict[str, float] = {'top': 0, 'bottom': 0, 'left': 0, 'right': 0}
+    _sensors: Dict[str, float] = {'front': 0, 'back': 0.2, 'left': 0, 'right': 0}
+    _nn: Network
+    _plot_results: Callable
 
     def __init__(self, nb_legs_pair: int = 3):
         """
@@ -133,6 +139,27 @@ class HexaBob:
         self._nb_legs_pair = nb_legs_pair
         for i in range(nb_legs_pair):
             self._legs.append((BobLeg((0, i)), BobLeg((1, i))))
+
+        # Build the network
+        self._nn, self._plot_results = build_nn(nb_leg_pair=nb_legs_pair,
+                                                sensor_front=self._sensors['front'],
+                                                sensor_back=self._sensors['back'],
+                                                sensor_left=self._sensors['left'],
+                                                sensor_right=self._sensors['right'])
+
+    def run(self, duration: int = 300):
+        """
+        Run the network simulation and plot the result.
+        To add or change a plot see the function "plot_results" in bob_nn.py
+
+        :param duration: The simulation duration in ms
+        """
+
+        logging.info('Network simulation started')
+        self._nn.run(duration * ms)
+        logging.info('Network simulation completed')
+
+        self._plot_results()
 
     def get_leg(self, index_side: int, index_leg: int) -> BobLeg:
         """
