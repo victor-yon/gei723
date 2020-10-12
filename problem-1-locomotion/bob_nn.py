@@ -4,10 +4,10 @@ from cpg_nn import monitor_cpg, build_cpg_nn, plot_monitor_cpg
 from direction_nn import build_direction_nn, monitor_direction, LEFT, RIGHT, plot_monitor_direction
 from leg_nn import leg_nn, monitor_leg, plot_monitor_leg
 
-DURATION = 100 * ms
+DURATION = 400 * ms
 
 # The value of Bob's sensor. Between 0 and 1 included.
-SENSOR_BACK = 0
+SENSOR_BACK = 0.2
 SENSOR_LEFT = 0.5
 SENSOR_RIGHT = 0
 
