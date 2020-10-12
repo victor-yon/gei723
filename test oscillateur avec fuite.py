@@ -34,7 +34,7 @@ th : 1
 
 ## [Groupe de neurone, declencheur et oscillateur]
 
-Declencheur = NeuronGroup(1, eqs, threshold= 't == 5*ms', reset='v = 0', method='euler')
+Declencheur = NeuronGroup(1, eqs, threshold= 't == 5*ms', reset='v = 0', refractory=0.5*ms ,method='euler')
 G = NeuronGroup(2, eqs, threshold= 'v >= th', reset= 'v = 0', refractory=0.5*ms , method='exact')
 
 Declencheur.I = [2]

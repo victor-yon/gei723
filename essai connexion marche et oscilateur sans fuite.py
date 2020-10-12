@@ -19,7 +19,7 @@ from brian2 import *
 #Quand on repart de 0, il ne reste pas à zero jusqu'au saut synaptique ..
 
 
-vitesse = 5
+vitesse = 1
 droite = 1
 gauche = 2
 
@@ -45,7 +45,7 @@ G =  NeuronGroup(2, eqs, threshold= 'v>= th', reset='v = 0', method='euler')
 G.th=0.8
 Declencheur.I = [2]
 G.I = [0,0]
-Declencheur.tau = [10]*ms
+Declencheur.tau = [200]*ms
 
 #La variable tau défini la fréquence de déclenchement, elle doit varier avec la vitesse
 G.tau = 10*ms  #a la base, 10/vitesse*ms
@@ -136,7 +136,7 @@ S_droite_paire.connect(i = 1, j=[k for k in range(Npaire)])
 
 ## [Run et affichage]
 
-run(40*ms)
+run(500*ms)
 
 pic_n1 = nombre[0]
 pic_n2 = spikemon.count[1]
