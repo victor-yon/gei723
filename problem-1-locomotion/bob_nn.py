@@ -74,29 +74,32 @@ def build_nn(nb_leg_pair: int = 3, sensor_back: float = 0.2, sensor_front: float
     # ====================== Legs =====================
     monitors_legs = list()
 
+    nb_even = nb_leg_pair // 2 + 1
+    nb_odd = nb_leg_pair // 2
+
     # Left even legs
-    legs_left_0 = legs_nn(nb_leg_pair // 2 + 1, direction_left_0, direction_left_1, ground_output_0, ground_output_1)
+    legs_left_0 = legs_nn(nb_even, direction_left_0, direction_left_1, ground_output_0, ground_output_1)
     m_legs_left_0 = monitor_legs(legs_left_0)
     monitors_legs.append(m_legs_left_0)
     nn.add(legs_left_0)
     nn.add(m_legs_left_0)
 
     # Left odd legs
-    legs_left_1 = legs_nn(nb_leg_pair // 2, direction_left_1, direction_left_0, ground_output_1, ground_output_0)
+    legs_left_1 = legs_nn(nb_odd, direction_left_1, direction_left_0, ground_output_1, ground_output_0)
     m_legs_left_1 = monitor_legs(legs_left_1)
     monitors_legs.append(m_legs_left_1)
     nn.add(legs_left_1)
     nn.add(m_legs_left_1)
 
     # Right even legs
-    legs_right_0 = legs_nn(nb_leg_pair // 2, direction_right_1, direction_right_0, ground_output_1, ground_output_0)
+    legs_right_0 = legs_nn(nb_even, direction_right_1, direction_right_0, ground_output_1, ground_output_0)
     m_legs_right_0 = monitor_legs(legs_right_0)
     monitors_legs.append(m_legs_right_0)
     nn.add(legs_right_0)
     nn.add(m_legs_right_0)
 
     # Right odd legs
-    legs_right_1 = legs_nn(nb_leg_pair // 2, direction_right_0, direction_right_1, ground_output_0, ground_output_1)
+    legs_right_1 = legs_nn(nb_odd, direction_right_0, direction_right_1, ground_output_0, ground_output_1)
     m_legs_right_1 = monitor_legs(legs_right_1)
     monitors_legs.append(m_legs_right_1)
     nn.add(legs_right_1)
