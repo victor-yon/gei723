@@ -43,7 +43,8 @@ def monitor_legs(legs_nn):
     return SpikeMonitor(motors, record=range(4))
 
 
-def plot_monitor_legs(monitors: list, leg_names: List[str], time_offset: float = 0):
+def plot_monitor_legs(monitors: list, leg_names: List[str], time_offset: float = 0, sensor_left=0, sensor_right=0,
+                      sensor_front=0, sensor_back=0):
     nb = len(monitors)
     fig, subplots = plt.subplots(nb, figsize=(8, nb * 1.5 + 2))
 
@@ -62,7 +63,9 @@ def plot_monitor_legs(monitors: list, leg_names: List[str], time_offset: float =
         s.set_title(n)
 
     plt.setp(subplots, yticks=[0, 1], yticklabels=['Lever\nBaisser', 'Avancer\nReculer'], ylim=[-0.5, 1.5])
-    plt.suptitle(f'Neurones moteurs des {len(monitors)} premières pattes', fontsize=14)
+    plt.suptitle(f'Neurones moteurs des {len(monitors)} premières pattes'
+                 f'\nCapteurs : avant: {sensor_front}A | arrière: {sensor_back}A\n'
+                 f'gauche: {sensor_left}A | droit: {sensor_right}A', fontsize=14)
     plt.xlabel('Instant de décharge (ms)')
     handles, labels = subplots[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc='upper right')

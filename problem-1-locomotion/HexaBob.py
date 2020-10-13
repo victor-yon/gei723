@@ -161,7 +161,7 @@ class HexaBob:
                                                 sensor_right=self._sensors['right'])
         logging.info('Neural network built')
 
-    def run(self, duration: int = 300):
+    def run(self, duration: int = 250):
         """
         Run the network simulation and plot the result.
         To add or change a plot see the function "plot_results" in bob_nn.py

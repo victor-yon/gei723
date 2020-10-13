@@ -53,12 +53,14 @@ def plot_monitor_ground_contact(m_ground_contact, front_sensor_input):
     state_mon_core, state_mon_output = m_ground_contact
 
     fig, (ax1, ax2) = plt.subplots(2)
-    ax1.plot(state_mon_core.t / ms, state_mon_core.v[0], color='blue', label='Core 0')
-    ax1.plot(state_mon_core.t / ms, state_mon_core.v[1], color='green', label='Core 1')
-    ax2.plot(state_mon_output.t / ms, state_mon_output.v[0], color='red', label='Output')
+    ax1.plot(state_mon_core.t / ms, state_mon_core.v[0], color='blue', label='Core 1')
+    ax1.axhline(y=BACKWARD_THRESHOLD, color='blue', linestyle=':', label='Seuil 1')
+    ax1.plot(state_mon_core.t / ms, state_mon_core.v[1], color='green', label='Core 2')
+    ax1.axhline(y=1 + BACKWARD_THRESHOLD, color='green', linestyle=':', label='Seuil 2')
+    ax2.plot(state_mon_output.t / ms, state_mon_output.v[0], color='red', label='Sortie')
     xlabel('Time (ms)')
     ylabel('v')
     ax1.legend()
     ax2.legend()
-    title(f"Module de contact du sol - Capteur frontal à {front_sensor_input}A")
+    suptitle(f"Module du sens de la marche - Capteur frontal à {front_sensor_input}A")
     show()

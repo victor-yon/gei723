@@ -23,7 +23,7 @@ Dans le fichier `main.py` plusieurs variables sont facilement modifiables :
 * `sensor_back` - Capteur arrière, plus la valeur est élevée plus l'exapode avance vite (min : 0 | max : 1 | défaut : 0.2)
 * `sensor_left` - Capteur gauche, plus la valeur est élevée plus l'exapode tourne a droite (min : 0 | max : 1 | défaut : 0)
 * `sensor_right` - Capteur gauche, plus la valeur est élevée plus l'exapode tourne a gauche (min : 0 | max : 1 | défaut : 0)
-* `duration` - Durée de la simulation en ms (min : 1 | défaut : 300)
+* `duration` - Durée de la simulation en ms (min : 1 | défaut : 250)
 
 ### Fichiers
 

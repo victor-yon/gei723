@@ -109,6 +109,7 @@ def build_nn(nb_leg_pair: int = 3, sensor_back: float = 0.2, sensor_front: float
         plot_monitor_cpg(m_cpg, sensor_back)
         plot_monitor_direction(m_direction_left_0, LEFT, sensor_right)
         plot_monitor_ground_contact(m_ground_contact_nn_0, sensor_front)
-        plot_monitor_legs(monitors_legs, ['Gauche 1', 'Gauche 2', 'Droit 1', 'Droit 2'], time_offset=150)
+        plot_monitor_legs(monitors_legs, ['Gauche 1', 'Gauche 2', 'Droite 1', 'Droite 2'], sensor_front=sensor_front,
+                          sensor_back=sensor_back, sensor_left=sensor_left, sensor_right=sensor_right)
 
     return nn, plot_results
