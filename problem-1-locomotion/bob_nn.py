@@ -11,7 +11,6 @@ def build_nn(nb_leg_pair: int = 3, sensor_back: float = 0.2, sensor_front: float
     """
     Build the Bob neural network and run it.
 
-    :param duration: The duration of the run in ms
     :param nb_leg_pair: The number of pair of leg
     :param sensor_back: The back sensor [0,1]
     :param sensor_front: The front sensor [0,1]
@@ -35,7 +34,7 @@ def build_nn(nb_leg_pair: int = 3, sensor_back: float = 0.2, sensor_front: float
     # 4 direction sub-network : 2 for each side
 
     # Left 0
-    direction_nn_left_0 = build_direction_nn(cpg_core, 0, sensor_left)
+    direction_nn_left_0 = build_direction_nn(cpg_core, 0, sensor_right)
     nn.add(direction_nn_left_0)
     direction_left_0 = direction_nn_left_0[0]  # Keep main neurone for modules link
     # Monitors
@@ -43,17 +42,17 @@ def build_nn(nb_leg_pair: int = 3, sensor_back: float = 0.2, sensor_front: float
     nn.add(m_direction_left_0)
 
     # Left 1
-    direction_nn_left_1 = build_direction_nn(cpg_core, 1, sensor_left)
+    direction_nn_left_1 = build_direction_nn(cpg_core, 1, sensor_right)
     direction_left_1 = direction_nn_left_1[0]  # Keep main neurone for modules link
     nn.add(direction_nn_left_1)
 
     # Right 0
-    direction_nn_right_0 = build_direction_nn(cpg_core, 0, sensor_right)
+    direction_nn_right_0 = build_direction_nn(cpg_core, 0, sensor_left)
     direction_right_0 = direction_nn_right_0[0]  # Keep main neurone for modules link
     nn.add(direction_nn_right_0)
 
     # Right 1
-    direction_nn_right_1 = build_direction_nn(cpg_core, 1, sensor_right)
+    direction_nn_right_1 = build_direction_nn(cpg_core, 1, sensor_left)
     direction_right_1 = direction_nn_right_1[0]  # Keep main neurone for modules link
     nn.add(direction_nn_right_1)
 
@@ -113,7 +112,7 @@ def build_nn(nb_leg_pair: int = 3, sensor_back: float = 0.2, sensor_front: float
 
     def plot_results():
         plot_monitor_cpg(m_cpg, sensor_back)
-        plot_monitor_direction(m_direction_left_0, LEFT, sensor_left)
+        plot_monitor_direction(m_direction_left_0, LEFT, sensor_right)
         plot_monitor_ground_contact(m_ground_contact_nn_0, sensor_front)
         plot_monitor_legs(monitor_legs_left + monitor_legs_right, ['Gauche 1', 'Gauche 2', 'Droit 1', 'Droit 2'],
                           time_offest=150)

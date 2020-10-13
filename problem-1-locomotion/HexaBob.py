@@ -126,7 +126,8 @@ class HexaBob:
     _nn: Network
     _plot_results: Callable
 
-    def __init__(self, nb_legs_pair: int = 3):
+    def __init__(self, nb_legs_pair: int = 3, sensor_front: float = 0, sensor_back: float = 0.2, sensor_left: float = 0,
+                 sensor_right: float = 0):
         """
         Create a new Bob with a fixed number of legs.
 
@@ -136,9 +137,20 @@ class HexaBob:
         if nb_legs_pair <= 0:
             raise ValueError(f'Invalid number pair of legs : "{nb_legs_pair}". Should be at least 1.')
 
+        if not 0 <= sensor_front <= 1:
+            raise ValueError(f'Invalid sensor front value : "{sensor_front}". Should be in [0,1].')
+        if not 0 <= sensor_back <= 1:
+            raise ValueError(f'Invalid sensor back value : "{sensor_back}". Should be in [0,1].')
+        if not 0 <= sensor_left <= 1:
+            raise ValueError(f'Invalid sensor left value : "{sensor_left}". Should be in [0,1].')
+        if not 0 <= sensor_right <= 1:
+            raise ValueError(f'Invalid sensor right value : "{sensor_right}". Should be in [0,1].')
+
         self._nb_legs_pair = nb_legs_pair
         for i in range(nb_legs_pair):
             self._legs.append((BobLeg((0, i)), BobLeg((1, i))))
+
+        self._sensors = {'front': sensor_front, 'back': sensor_back, 'left': sensor_left, 'right': sensor_right}
 
         # Build the network
         self._nn, self._plot_results = build_nn(nb_leg_pair=nb_legs_pair,
@@ -202,6 +214,10 @@ class HexaBob:
         :return: The printable string
         """
         s = f'HexaBob with {2 * self._nb_legs_pair} legs\n\n'
+        s += f' - Front : {self._sensors["front"]}\n' \
+             f' - Back {self._sensors["back"]}\n' \
+             f' - Left {self._sensors["left"]}\n' \
+             f' - Right {self._sensors["right"]}\n\n'
 
         s += '          ☉^☉\n'
         for i in range(self._nb_legs_pair):
