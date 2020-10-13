@@ -3,7 +3,7 @@ from brian2 import *
 from cpg_nn import monitor_cpg, build_cpg_nn, plot_monitor_cpg
 from direction_nn import build_direction_nn, monitor_direction, plot_monitor_direction, LEFT
 from ground_contact_nn import build_ground_contact_nn, monitor_ground_contact, plot_monitor_ground_contact
-from leg_nn import leg_nn, monitor_leg, plot_monitor_legs
+from leg_nn import legs_nn, monitor_legs, plot_monitor_legs
 
 
 def build_nn(nb_leg_pair: int = 3, sensor_back: float = 0.2, sensor_front: float = 0,
@@ -72,49 +72,40 @@ def build_nn(nb_leg_pair: int = 3, sensor_back: float = 0.2, sensor_front: float
     nn.add(ground_contact_nn_1)
 
     # ====================== Legs =====================
-    monitor_legs_left = list()
-    monitor_legs_right = list()
-    for i in range(nb_leg_pair):
+    monitors_legs = list()
 
-        # ----------- Left -----------
-        leg_l = None
-        # Left even
-        if i % 2 == 0:
-            leg_l = leg_nn(direction_left_0, direction_left_1, ground_output_0, ground_output_1)
-        # Left odd
-        else:
-            leg_l = leg_nn(direction_left_1, direction_left_0, ground_output_1, ground_output_0)
+    # Left even legs
+    legs_left_0 = legs_nn(nb_leg_pair // 2 + 1, direction_left_0, direction_left_1, ground_output_0, ground_output_1)
+    m_legs_left_0 = monitor_legs(legs_left_0)
+    monitors_legs.append(m_legs_left_0)
+    nn.add(legs_left_0)
+    nn.add(m_legs_left_0)
 
-        # Save left
-        nn.add(leg_l)
-        # Monitor the 2 first legs of each side (all other are doing the same)
-        if i < 2:
-            m_leg_l = monitor_leg(leg_l)
-            monitor_legs_left.append(m_leg_l)
-            nn.add(m_leg_l)
+    # Left odd legs
+    legs_left_1 = legs_nn(nb_leg_pair // 2, direction_left_1, direction_left_0, ground_output_1, ground_output_0)
+    m_legs_left_1 = monitor_legs(legs_left_1)
+    monitors_legs.append(m_legs_left_1)
+    nn.add(legs_left_1)
+    nn.add(m_legs_left_1)
 
-        # ---------- Right -----------
-        leg_r = None
-        # Right even
-        if i % 2 == 0:
-            leg_r = leg_nn(direction_right_1, direction_right_0, ground_output_1, ground_output_0)
-        # Right odd
-        else:
-            leg_r = leg_nn(direction_right_0, direction_right_1, ground_output_0, ground_output_1)
+    # Right even legs
+    legs_right_0 = legs_nn(nb_leg_pair // 2, direction_right_1, direction_right_0, ground_output_1, ground_output_0)
+    m_legs_right_0 = monitor_legs(legs_right_0)
+    monitors_legs.append(m_legs_right_0)
+    nn.add(legs_right_0)
+    nn.add(m_legs_right_0)
 
-        # Save right
-        nn.add(leg_r)
-        # Monitor the 2 first legs of each side (all other are doing the same)
-        if i < 2:
-            m_leg_r = monitor_leg(leg_r)
-            monitor_legs_right.append(m_leg_r)
-            nn.add(m_leg_r)
+    # Right odd legs
+    legs_right_1 = legs_nn(nb_leg_pair // 2, direction_right_0, direction_right_1, ground_output_0, ground_output_1)
+    m_legs_right_1 = monitor_legs(legs_right_1)
+    monitors_legs.append(m_legs_right_1)
+    nn.add(legs_right_1)
+    nn.add(m_legs_right_1)
 
     def plot_results():
         plot_monitor_cpg(m_cpg, sensor_back)
         plot_monitor_direction(m_direction_left_0, LEFT, sensor_right)
         plot_monitor_ground_contact(m_ground_contact_nn_0, sensor_front)
-        plot_monitor_legs(monitor_legs_left + monitor_legs_right, ['Gauche 1', 'Gauche 2', 'Droit 1', 'Droit 2'],
-                          time_offest=150)
+        plot_monitor_legs(monitors_legs, ['Gauche 1', 'Gauche 2', 'Droit 1', 'Droit 2'], time_offset=150)
 
     return nn, plot_results

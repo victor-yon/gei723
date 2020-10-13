@@ -134,8 +134,8 @@ class HexaBob:
         :param nb_legs_pair: The number of pair of legs. Should be at least 1.
         """
 
-        if nb_legs_pair <= 0:
-            raise ValueError(f'Invalid number pair of legs : "{nb_legs_pair}". Should be at least 1.')
+        if nb_legs_pair <= 1:
+            raise ValueError(f'Invalid number pair of legs : "{nb_legs_pair}". Should be at least 2.')
 
         if not 0 <= sensor_front <= 1:
             raise ValueError(f'Invalid sensor front value : "{sensor_front}". Should be in [0,1].')
@@ -152,12 +152,14 @@ class HexaBob:
 
         self._sensors = {'front': sensor_front, 'back': sensor_back, 'left': sensor_left, 'right': sensor_right}
 
+        logging.info('Building the neural network')
         # Build the network
         self._nn, self._plot_results = build_nn(nb_leg_pair=nb_legs_pair,
                                                 sensor_front=self._sensors['front'],
                                                 sensor_back=self._sensors['back'],
                                                 sensor_left=self._sensors['left'],
                                                 sensor_right=self._sensors['right'])
+        logging.info('Neural network built')
 
     def run(self, duration: int = 300):
         """

@@ -1,7 +1,8 @@
 from brian2 import *
 
 SPIKE_TRAIN_SIZE = 4
-SPEED_CONSTANT = 31.25 * ms
+SPEED_CONSTANT = 31.25
+
 
 def build_cpg_nn(back_sensor_value):
     # 3 Neurones : 1 Pour déclencher le signal, 2 qui oscillent
@@ -27,7 +28,7 @@ def build_cpg_nn(back_sensor_value):
     core_nn.th = 0.8
     core_nn.I = [0, 0]
     # La variable tau défini la fréquence de déclenchement, elle doit varier avec la vitesse
-    core_nn.tau = SPEED_CONSTANT / speed
+    core_nn.tau = SPEED_CONSTANT / speed * ms
 
     # ================ Trigger to Core ================
     # Déclenchement de l'oscillateur

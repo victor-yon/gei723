@@ -18,7 +18,7 @@ pip 20.0.2
 
 Dans le fichier `main.py` plusieurs variables sont facilement modifiables :
 
-* `nb_legs_pair` - Le nombre de pair de pattes à simuler (min : 1 | défaut : 3)
+* `nb_legs_pair` - Le nombre de pair de pattes à simuler (min : 2 | défaut : 3)
 * `sensor_front` - Capteur frontal, fait reculer l'exapode au dessus de 0.5 (min : 0 | max : 1 | défaut : 0)
 * `sensor_back` - Capteur arrière, plus la valeur est élevée plus l'exapode avance vite (min : 0 | max : 1 | défaut : 0.2)
 * `sensor_left` - Capteur gauche, plus la valeur est élevée plus l'exapode tourne a droite (min : 0 | max : 1 | défaut : 0)
@@ -33,7 +33,7 @@ Dans le fichier `main.py` plusieurs variables sont facilement modifiables :
 * `cpg_nn.py` : Construction du réseau de neurones pour le générateur de rythme central.
 * `direction_nn.py` : Construction du réseau de neurones qui permet de tourner à droit et à gauche.
 * `ground_contact_nn.py` : Construction du réseau de neurones qui permet de baisser et lever la patte. Ce qui permet de gérer la marche arrière et avant.
-* `leg_nn.py` : Construction du réseau qui gère les 4 neurones moteurs de la patte.
+* `legs_nn.py` : Construction du réseau qui gère les 4 neurones moteurs par patte pour un même groupe de patte (par exemple les impaires gauche).
 
 # Auteurs
 
