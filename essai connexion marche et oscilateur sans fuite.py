@@ -19,7 +19,7 @@ from brian2 import *
 #Quand on repart de 0, il ne reste pas à zero jusqu'au saut synaptique ..
 
 
-vitesse = 1
+vitesse = 10
 droite = 1
 gauche = 2
 
@@ -43,12 +43,12 @@ Declencheur = NeuronGroup(1, eqs, threshold= 't == 5*ms', reset='v = 0', method=
 G =  NeuronGroup(2, eqs, threshold= 'v>= th', reset='v = 0', method='euler')
 
 G.th=0.8
-Declencheur.I = [2]
+Declencheur.I = [0.5]
 G.I = [0,0]
-Declencheur.tau = [200]*ms
+Declencheur.tau = [2.5]*ms
 
 #La variable tau défini la fréquence de déclenchement, elle doit varier avec la vitesse
-G.tau = 10*ms  #a la base, 10/vitesse*ms
+G.tau = 31.25*ms  #a la base, 10/vitesse*ms
 
 ## [Marche neurones]
 
@@ -71,10 +71,10 @@ Gauche_paire.th = 0.8
 Gauche_impaire.th = 0.8
 
 #Constante de temps
-Droit_paire.tau = 10/vitesse*ms
-Droit_impaire.tau = 10/vitesse*ms
-Gauche_paire.tau = 10/vitesse*ms
-Gauche_impaire.tau = 10/vitesse*ms
+Droit_paire.tau = 31.25/vitesse*ms
+Droit_impaire.tau = 31.25/vitesse*ms
+Gauche_paire.tau = 31.25/vitesse*ms
+Gauche_impaire.tau = 31.25/vitesse*ms
 
 #intensité dans les neurones
 Droit_paire.I = 0
@@ -136,15 +136,15 @@ S_droite_paire.connect(i = 1, j=[k for k in range(Npaire)])
 
 ## [Run et affichage]
 
-run(500*ms)
+run(80*ms)
 
 pic_n1 = nombre[0]
 pic_n2 = spikemon.count[1]
 print(nombre, pic_n1, pic_n2 )
 
-#plot(M.t/ms, Dec.v[0], label='Neuron 0')
-plot(M.t/ms, M.v[0], "--" ,label='Neuron 1')
-plot(M.t/ms, M.v[1], "--" ,label='Neuron 2')
+plot(M.t/ms, Dec.v[0], label='Neuron D')
+plot(M.t/ms, M.v[0], "r-" ,label='Neuron 1')
+plot(M.t/ms, M.v[1], "b-" ,label='Neuron 2')
 #plot(M.t/ms, Dimp.v[0], label = 'Neuron droit impaire')
 #plot(M.t/ms, Dpair.v[0], label = 'Neuron droit paire')
 #plot(M.t/ms, Gimp.v[0], label = 'Neuron gauche impaire')
@@ -154,5 +154,7 @@ plot(M.t/ms, M.v[1], "--" ,label='Neuron 2')
 xlabel('Time (ms)')
 ylabel('v')
 legend()
-title("Vitesse : {0}".format(vitesse))
+title("Oscilation du CPG pour la vitesse : {0}".format(vitesse))
 show()
+
+
