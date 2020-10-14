@@ -40,7 +40,6 @@ Dans le fichier `main.py` plusieurs variables sont facilement modifiables :
 * `direction_nn.py` : Construction du réseau de neurones permettant de tourner à droit et à gauche.
 * `ground_contact_nn.py` : Construction du réseau de neurones permettant de baisser et lever la patte. Ce qui permet de gérer la marche arrière et avant.
 * `legs_nn.py` : Construction du réseau qui gère les 4 neurones moteurs par patte, pour un même groupe de patte (par exemple les impaires gauches).
-* `main_alt` : Implémentation alternative du modèle, indépendante du reste.
 
 # Auteurs
 
