@@ -24,7 +24,7 @@ pyhton3 main.py
 
 Dans le fichier `main.py` plusieurs variables sont facilement modifiables :
 
-* `nb_legs_pair` - Le nombre de pair de pattes à simuler (min: 2 | défaut: 3)
+* `nb_legs_pair` - Le nombre de paires de pattes à simuler (min: 2 | défaut: 3)
 * `sensor_front` - Capteur frontal, fait reculer l'exapode au dessus de 0.5 (min: 0 | max: 1 | défaut: 0)
 * `sensor_back` - Capteur arrière, plus la valeur est élevée plus l'exapode avance vite (min: 0 | max: 1 | défaut: 0.2)
 * `sensor_left` - Capteur gauche, plus la valeur est élevée plus l'exapode tourne a droite (min: 0 | max: 1 | défaut: 0)
