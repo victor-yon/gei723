@@ -1,8 +1,6 @@
-from brian2 import *
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import axis
-from matplotlib.ticker import FormatStrFormatter
+import numpy as np
+from brian2 import *
 
 N = 3
 

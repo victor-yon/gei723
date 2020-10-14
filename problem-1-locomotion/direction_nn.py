@@ -69,10 +69,10 @@ def monitor_direction(direction_nn):
 def plot_monitor_direction(m_direction, side, side_sensor_value):
     state_mon_main, state_mon_inhib = m_direction
 
-    plot(state_mon_main.t / ms, state_mon_main.v[0], color='blue', label='Direction')
-    plot(state_mon_inhib.t / ms, state_mon_inhib.v[0] + state_mon_inhib.v_bis[0], color='red', label='Direction Inhib')
+    plot(state_mon_main.t / ms, state_mon_main.v[0], color='blue', label='Sortie')
+    plot(state_mon_inhib.t / ms, state_mon_inhib.v[0] + state_mon_inhib.v_bis[0], color='red', label='Inhibition')
     xlabel('Time (ms)')
     ylabel('v')
-    title(f"Module de direction {'gauche' if side == LEFT else 'droit'} - Capteur latéral à {side_sensor_value}A")
+    title(f"Module de rotation {'gauche' if side == LEFT else 'droit'} - Capteur latéral à {side_sensor_value}A")
     legend()
     show()

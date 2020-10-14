@@ -17,4 +17,4 @@ if __name__ == '__main__':
     print(bob)
 
     # Run the network simulation during a specific time in ms, then plot some figures
-    bob.run(duration=300)
+    bob.run(duration=250)
