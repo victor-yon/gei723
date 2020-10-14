@@ -18,7 +18,7 @@ cd problem-1-locomotion
 pyhton3 main.py
 ```
 
-> Le succès de l'exécution devrait être confirmé pas une sortie textuelle.
+> Le succès de l'exécution devrait être confirmé par une sortie textuelle.
 
 ### Paramètres
 
