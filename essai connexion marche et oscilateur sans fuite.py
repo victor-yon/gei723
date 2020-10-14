@@ -97,7 +97,7 @@ S_declenche.connect(i=0, j=0)
 S_oscil =Synapses(G, G, on_pre='v_post += 0.2', on_post='I_pre = 0; I_post = 2*vitesse') # on_post = '''I_pre = 0; I_post = 2'''
 S_oscil.connect(i = 0, j=1)
 S_oscil.connect(i = 1, j=0)
-S_oscil.delay = (G.th*G.tau*1/(2*vitesse))*(36/32) #/2
+S_oscil.delay = (G.th*G.tau*1/(2*vitesse))*(39/32) #/2
 
 
 Dec = StateMonitor(Declencheur, 'v', record=True) 
@@ -136,7 +136,7 @@ S_droite_paire.connect(i = 1, j=[k for k in range(Npaire)])
 
 ## [Run et affichage]
 
-run(80*ms)
+run(300*ms)
 
 pic_n1 = nombre[0]
 pic_n2 = spikemon.count[1]
