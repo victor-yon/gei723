@@ -6,21 +6,30 @@ import logging
 import time
 
 
-DATA_LIMIT = 20
+DATA_LIMIT = 10
+
+# Répartition pour quand les tests seront finis
+# DATALIMIT = # Multiplie de 20
+# VAL_LIMIT = 0.15*DATALIMIT
+# TEST_LIMIT = 0.15*DATALIMIT
+# TRAIN_LIMIT = DATALIMIT-(VAL_LIMIT+TEST_LIMIT)
+
 TEST_SIZE = 5
-NUMBER_NODES_PER_LAYER = 784
+TRAIN_SIZE = DATA_LIMIT - TEST_SIZE
+NUMBER_NODES_PER_LAYER = 40
 EPOCHS = 1
 CONNECTIVITY = [0.0025, 0.9]
-FILE_NAME = None #'net_file'
-WMAX = 1
+FILE_NAME = 'net_file'
+WMAX = 0.5
 MU = 1
 INDEX = 1 # Valeur entre 0 et 9 pour choisir le learning rate
 NU_EE_PRE = np.arange(0.1, 1.1, 0.1)
 NU_EE_POST = np.arange(0.1, 1.1, 0.1)
+accuracy = []
 
 # spécifie le niveau de logging:
-logging.basicConfig(filename='logfile.log', level=logging.DEBUG, format='%(asctime)s:%(name)s:%(message)s')
-logging.debug('--------beginning of logfile---------')
+logging.basicConfig(filename='logfile.log', level=logging.INFO, format='%(asctime)s:%(name)s:%(message)s')
+logging.info('--------beginning of logfile---------')
 
 X_all, y_all = datasets.fetch_openml('mnist_784', version=1, return_X_y=True, data_home='./data')
 
@@ -76,7 +85,7 @@ nu_ee_pre =  NU_EE_PRE[INDEX] # [0, 1]
 nu_ee_post =  NU_EE_POST[INDEX]# [0, 1]
 
 
-input_rates = np.ones([1,784])
+input_rates = np.zeros([1,784])
 input_group = PoissonGroup(784, rates = input_rates*Hz) # Groupe de Poisson
 
 neuron_model = '''
@@ -86,9 +95,9 @@ neuron_model = '''
 
     I_synI =  gi * nS * (d_I_synI-v) : amp
 
-    dge/dt = -ge/(1.0*ms)            : 1
+    dge/dt = -ge/(10.0*ms)            : 1
 
-    dgi/dt = -gi/(2.0*ms)            : 1
+    dgi/dt = -gi/(20.0*ms)            : 1
 
     tau                              : second (constant, shared)
 
@@ -165,29 +174,33 @@ i_e_synapse.connect(True, p=CONNECTIVITY[1])
 i_e_synapse.w = 'rand()*17.0'
 
 total_number_of_synapses = len(input_synapse) + len(e_i_synapse) + len(i_e_synapse)
-logging.debug(f'Nombre de synapses dans le réseau: {total_number_of_synapses}')
+logging.info(f'Nombre de synapses dans le réseau: {total_number_of_synapses}')
 
-e_monitor = SpikeMonitor(excitatory_group, record=False)
+e_monitor = SpikeMonitor(excitatory_group, record=True)
 
 # Créons le réseau.
-
 net = Network(input_group, excitatory_group, inhibitory_group,
               input_synapse, e_i_synapse, i_e_synapse, e_monitor)
-if FILE_NAME is not None:
-    store(filename = FILE_NAME)
+# net.store(filename = f"{FILE_NAME}")
+# net.restore(filename=f"{FILE_NAME} entraînement")
+#print(net)
 
-#logging.debug(net)
+if FILE_NAME is not None:
+    net.store(filename = FILE_NAME)
+
 def pause(pause_time=None):
     if pause_time == None:
         pause = input('Press to continue')
     time.sleep(pause_time)
 
-    ## Entrainement
-def training():
-    spikes = np.zeros((10, len(excitatory_group)))
-    old_spike_counts = np.zeros(len(excitatory_group))
+## Entrainement
 
+spikes = np.zeros((10, len(excitatory_group)))
+old_spike_counts = np.zeros(len(excitatory_group))
+
+def training(spikes, old_spike_counts):
     # Entrainement
+    #net.restore(filename = FILE_NAME)
     number_of_epochs = EPOCHS
     for i in range(number_of_epochs):
         print('Starting epoch %i' % i)
@@ -214,35 +227,71 @@ def training():
             net.run(resting_time)
 
             # Normaliser les poids
-            weight_matrix = np.zeros([784, 784])
+            weight_matrix = np.zeros([784, NUMBER_NODES_PER_LAYER])
             weight_matrix[input_synapse.i, input_synapse.j] = input_synapse.w
+            print('Matrice poids avant normalisation')
+            print(weight_matrix[:20][:20])
             # weight_matrix = weight_matrix/input_synapse.wmax
             col_sums = np.sum(weight_matrix, axis=0)
             # colFactors = weight_matrix[0] / col_sums
-            colFactors = 1 / col_sums
+            colFactors = 1 / (col_sums)
 
             for k in range(len(excitatory_group)):
                 weight_matrix[:, k] *= colFactors[k]
             input_synapse.w = weight_matrix[input_synapse.i, input_synapse.j]
-    #store(filename = FILE_NAME)
-    return spikes, old_spike_counts
+            print('matrice poids après normalisation')
+            print(weight_matrix[:10][:10])
+            #if not sample % 100:
+                # input_synapse.plastic = False
+                # num_correct_output = 0
+
+                # for i, (sample, label) in enumerate(zip(X_test, y_test)):
+                #     # Afficher régulièrement l'état d'avancement
+                #     if (i % 1) == 0:
+                #         print("Running sample %i out of %i" % (i, len(X_test)))
+                #
+                #     # Configurer le taux d'entrée
+                #     # ATTENTION, vous pouvez utiliser un autre type d'encodage
+                #     input_group.rates = sample / 4 * units.Hz
+                #
+                #     # Simuler le réseau
+                #     net.run(time_per_sample)
+                #
+                #     # Calculer le nombre de décharges pour l'échantillon
+                #     current_spike_count = e_monitor.count - old_spike_counts
+                #     # Gardons une copie du décompte de décharges pour pouvoir calculer le prochain
+                #     old_spike_counts = np.copy(e_monitor.count)
+                #
+                #     # Prédire la classe de l'échantillon
+                #     output_label = np.argmax(spikes, axis=1)[0]
+                #     # Si la prédiction est correcte
+                #     if output_label == int(label):
+                #         num_correct_output += 1
+                #
+                #     # Laisser les variables retourner à leurs valeurs de repos
+                #     net.run(resting_time)
+                #
+                # logging.info("The model accuracy is : %.3f" % (num_correct_output / len(X_test)))
+                # accuracy.append(num_correct_output / len(X_test))
+                # logging.info(
+                #     f"parameters: {DATA_LIMIT}samples, including{TEST_SIZE}for testing, {NUMBER_NODES_PER_LAYER}neurons in learning layers,"
+                #     f"{NU_EE_POST[INDEX]} as learning rate, {EPOCHS}iterations, {CONNECTIVITY[0]}connectivity in excitatory layer,"
+                #     f" {CONNECTIVITY[1]}connectivity in inhibitory layer")
+    #print(net)
+    store(filename =f"{FILE_NAME} after {TRAIN_SIZE} samples") #samples, {NUMBER_NODES_PER_LAYER}neurons in learning layers,"
+                  # f"{NU_EE_POST[INDEX]} as learning rate, {EPOCHS}iterations, {CONNECTIVITY[0]}connectivity in excitatory layer,"
+                  # f" {CONNECTIVITY[1]}connectivity in inhibitory layer")
+    return
 
 def test(spikes, old_spike_counts):
-    ## Test
-
     labeled_neurons = np.argmax(spikes, axis=1)
-    test_time_begin = time.time()
-    # labeled_neurons
-
 
     # Déasctiver la plasticité STDP
     input_synapse.plastic = False
-
     num_correct_output = 0
-
     for i, (sample, label) in enumerate(zip(X_test, y_test)):
         # Afficher régulièrement l'état d'avancement
-        if (i % 10) == 0:
+        if (i % 1) == 0:
             print("Running sample %i out of %i" % (i, len(X_test)))
 
         # Configurer le taux d'entrée
@@ -259,7 +308,6 @@ def test(spikes, old_spike_counts):
 
         # Prédire la classe de l'échantillon
         output_label = np.argmax(spikes, axis=1)[0]
-
         # Si la prédiction est correcte
         if output_label == int(label):
             num_correct_output += 1
@@ -267,27 +315,44 @@ def test(spikes, old_spike_counts):
         # Laisser les variables retourner à leurs valeurs de repos
         net.run(resting_time)
 
-    logging.debug("The model accuracy is : %.3f" % (num_correct_output / len(X_test)))
-    logging.debug(f"parameters: {DATA_LIMIT}samples, including{TEST_SIZE}for testing, {NUMBER_NODES_PER_LAYER}neurons in learning layers,"
+    logging.info("The model accuracy is : %.3f" % (num_correct_output / len(X_test)))
+    accuracy.append(num_correct_output / len(X_test))
+    logging.info(f"parameters: {DATA_LIMIT}samples, including{TEST_SIZE}for testing, {NUMBER_NODES_PER_LAYER}neurons in learning layers,"
                   f"{NU_EE_POST[INDEX]} as learning rate, {EPOCHS}iterations, {CONNECTIVITY[0]}connectivity in excitatory layer,"
                   f" {CONNECTIVITY[1]}connectivity in inhibitory layer")
 
 
 beginning = time.time()
-#pause(2)
 if FILE_NAME is not None:
-    print('net')
-    print(net)
-    restore(filename = FILE_NAME)
-    print(net)
-spikes, old_spike_counts = training()
+    #print('net')
+    net.restore(filename = FILE_NAME)
+training(spikes, old_spike_counts)
 training_time = time.time()
-logging.debug('training took {} seconds' .format(training_time - beginning))
-store(filename = FILE_NAME)
+logging.info('training took {} seconds' .format(training_time - beginning))
+#store(filename = FILE_NAME)
+plt.figure()
+for i in range(10):
+    plt.plot(np.arange(0, np.size(spikes, axis=1)), spikes[i, :]) # plot chaque lignes de la matrice spike pour la carte d'activation
+#plt.show()
+plt.title('Carte d''activation')
+
+plt.figure()
+COURBES = 30
+for i in range(COURBES):
+    plt.plot(np.arange(0, np.size(spikes, axis=0)), spikes[:, i]) # plot les colonnes de spikes pour avoir les courbes d'accord. Pas toutes les faire car beaucoup trop
+#plt.show()
+plt.title('Échantillon des courbes d''accord des {COURBES} premiers neurones')
+
+
+# Histogramme des courbes d'accord
+
 
 #restore
+if FILE_NAME is not None:
+    print('net')
+    net.restore(filename = f"{FILE_NAME} after {TRAIN_SIZE} samples")
 test_time_begin = time.time()
-#pause(2)
 test(spikes, old_spike_counts)
-logging.debug("Test took {} seconds" .format(time.time()-test_time_begin))
-logging.debug('======End of logfile=======')
+#print(net)
+logging.info("Test took {} seconds" .format(time.time()-test_time_begin))
+logging.info('======End of logfile=======')
