@@ -126,8 +126,6 @@ stdp_synapse_model = '''
     dpost2/dt  = -post2/(tc_post_2_ee) : 1 (event-driven)
 
     wmax = WMAX : 1
-
-    mu = MU : 1
 '''
 
 stdp_pre = '''
@@ -197,7 +195,7 @@ def training(spikes, old_spike_counts, weight_average, voltage_inh_neuron):
 
             # Simuler le réseau
             net.run(time_per_sample)
-            print(voltage_inh_neuron.v[0])
+            print(voltage_inh_neuron.i)
             # Enregistrer les décharges
             spikes[int(label)] += e_monitor.count - old_spike_counts
 
@@ -213,8 +211,8 @@ def training(spikes, old_spike_counts, weight_average, voltage_inh_neuron):
             # Normaliser les poids
             weight_matrix = np.zeros([784, NUMBER_NODES_PER_LAYER])
             weight_matrix[input_synapse.i, input_synapse.j] = input_synapse.w
-
-            super_script = (np.log10(np.ones(np.shape(weight_matrix))*np.sqrt((np.max(weight_matrix))/np.min(weight_matrix)))-np.log10(weight_matrix))/3.2
+            # Matrice exposants
+            super_script = (np.log10(np.ones(np.shape(weight_matrix))*np.sqrt((np.max(weight_matrix))/np.min(weight_matrix)))-np.log10(weight_matrix))/5
 
             L = np.max(weight_matrix)
             weight_matrix = weight_matrix
