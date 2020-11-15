@@ -1,9 +1,39 @@
-# Adapted from Song, Miller and Abbott (2000) and Song and Abbott (2001)
-# https://brian2.readthedocs.io/en/latest/examples/synapses.STDP.html
-
 from brian2 import *
 
-if __name__ == '__main__':
+from util_plots import stdp_shape
+
+
+def stdp_with_time():
+    eqs_stdp_test = '''
+        w : 1
+        t_spike_a : second
+        t_spike_b : second
+        tau_a = 20 * ms : second
+        tau_b = 20 * ms : second
+        A = 0.01 : 1
+        B = -0.01 : 1
+        t0 = 0 * second : second
+    '''
+    # On peut avoir accès au temps avec la variable t dans la syntaxe des équations de Brian2
+    on_pre_test = '''
+        v_post += w
+        t_spike_a = t
+        w = w + int(t_spike_b > t0) * B * exp((t_spike_b - t_spike_a)/tau_b) # le cas Delta t < 0
+        t_spike_b = t0
+    '''
+    on_post_test = '''
+        t_spike_b = t
+        w = w + int(t_spike_a > t0) * A * exp(-(t_spike_b - t_spike_a)/tau_a) # le cas Delta t > 0
+        t_spike_a = t0
+    '''
+
+    stdp_shape(eqs_stdp=eqs_stdp_test, on_pre=on_pre_test, on_post=on_post_test)
+
+
+def stdp_with_trace():
+    # Adapted from Song, Miller and Abbott (2000) and Song and Abbott (2001)
+    # https://brian2.readthedocs.io/en/latest/examples/synapses.STDP.html
+
     # Input parameters
     nb_neurons_input = 1000
     frequency_input = 15 * Hz
@@ -80,3 +110,7 @@ if __name__ == '__main__':
     ylabel('Weight / gmax')
     tight_layout()
     show()
+
+
+if __name__ == '__main__':
+    stdp_with_time()
