@@ -56,7 +56,7 @@ if __name__ == '__main__':
     '''
 
     synapses = Synapses(input_neurons, core, eqs_synapses, on_pre=on_pre, on_post=on_post, )
-    synapses.connect()  # Self connection?
+    synapses.connect()
     synapses.w = 'rand() * gmax'
     syn_monitor = StateMonitor(synapses, 'w', record=[0, 1])  # Record the 2 first synapses
 
