@@ -3,8 +3,8 @@ import numpy as np
 from brian2 import NeuronGroup, Synapses, SpikeGeneratorGroup, units, Network
 
 
-def stdp_shape(eqs_stdp: str, on_pre: str, on_post: str, neuron_threshold: int = 1, min_delta: int = -50,
-               max_delta: int = 50, nb_measurement: int = 50, plot_title: str = 'STDP shape',
+def stdp_shape(eqs_stdp: str, on_pre: str, on_post: str, neuron_threshold: int = 1, neuron_variable: str = '',
+               min_delta: int = -50, max_delta: int = 50, nb_measurement: int = 50, plot_title: str = 'STDP shape',
                verbose: bool = False) -> None:
     """
     Draw the shape of a STDP equation (evolution of Δ weights over time).
@@ -13,6 +13,7 @@ def stdp_shape(eqs_stdp: str, on_pre: str, on_post: str, neuron_threshold: int =
     :param on_pre: The action before the spike
     :param on_post: The action after the spike
     :param neuron_threshold: The neuron threshold (should be compatible with the on_pre equation)
+    :param neuron_variable: 
     :param min_delta: The minimal time difference between post and pre synaptic spike
     :param max_delta: The maximal time difference between post and pre synaptic spike
     :param nb_measurement: The number of measurement point between the delta min and max
@@ -21,7 +22,8 @@ def stdp_shape(eqs_stdp: str, on_pre: str, on_post: str, neuron_threshold: int =
     """
 
     # Most simple neurons equation for simulation
-    neurons = NeuronGroup(2, model='v : 1', threshold=f'v>={neuron_threshold}', reset='v=0', method='euler')
+    neurons = NeuronGroup(2, model=f'v : 1\n{neuron_variable}', threshold=f'v>={neuron_threshold}', reset='v=0',
+                          method='euler')
     neurons.v = 0
 
     # One synapse between the neurons, using the equations to evaluate
