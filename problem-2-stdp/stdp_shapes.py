@@ -114,5 +114,55 @@ def stdp_with_trace():
     show()
 
 
+def diehl_cook():
+    stdp_synapse_model = '''
+        w : 1
+        
+        tc_pre_ee = 20 * ms : second
+        tc_post_1_ee = 20 * ms : second
+        tc_post_2_ee = 40 * ms : second
+        
+        nu_ee_presyn = 0.1 : 1
+        nu_ee_postsyn = 0.1 : 1
+    
+        plastic : boolean (shared) # Activer/désactiver la plasticité
+        
+        post2before : 1  # x_tar ?
+    
+        dpre/dt    = -pre/(tc_pre_ee) : 1 (event-driven)
+    
+        dpost1/dt  = -post1/(tc_post_1_ee) : 1 (event-driven)
+    
+        dpost2/dt  = -post2/(tc_post_2_ee) : 1 (event-driven)  # (?)
+    
+        wmax = 10 : 1  # Completed
+    
+        mu = 1 : 1  # Completed
+    '''
+
+    # Completed
+    stdp_pre = '''
+        ge_post += w
+        
+        pre = 1.
+        
+        w = clip(w + (nu_ee_presyn * post1), 0, wmax)
+    '''
+
+    # Completed
+    # w = clip(w + nu_ee_postsyn*(pre-post2before)*(wmax - w)**mu, 0, wmax)
+    stdp_post = '''
+        post2before = post2
+        
+        w = clip(w + (nu_ee_postsyn * pre), 0, wmax)
+        
+        post1 = -1.
+    
+        post2 = 1.
+    '''
+
+    stdp_shape(eqs_stdp=stdp_synapse_model, on_pre=stdp_pre, on_post=stdp_post, neuron_variable='ge : 1')
+
+
 if __name__ == '__main__':
     stdp_with_trace()
