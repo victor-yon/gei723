@@ -5,10 +5,10 @@ Code adapted from : https://github.com/zxzhijia/Brian2STDPMNIST
 
 import logging
 
+import matplotlib.pyplot as plt
 import numpy as np
 from brian2 import prefs, units, NeuronGroup, Synapses, SpikeMonitor, PoissonGroup, Network
 from sklearn import datasets
-import matplotlib.pyplot as plt
 
 
 def load_data():
@@ -16,7 +16,6 @@ def load_data():
     images, labels = datasets.fetch_openml('mnist_784', version=1, return_X_y=True, data_home='./data')
     logging.info(f'MNIST database loaded: {len(images)} images of dimension {images[0].shape}')
     return images, labels
-
 
 
 def normalize_weights(synapses_input_e):
@@ -30,7 +29,7 @@ def normalize_weights(synapses_input_e):
     for j in range(len_target):
         temp_conn[:, j] *= col_factors[j]
     synapses_input_e.w = temp_conn[synapses_input_e.i, synapses_input_e.j]
-   
+
 
 def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     if nb_train_samples > 60000:
@@ -49,8 +48,8 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     # ================================== Simulation parameters =================================
     nb_input_neurons = len(images[0])
-    nb_excitator_neurons: int = 400     #a faire varier
-    nb_inhibitor_neurons: int = 400     #a faire varier
+    nb_excitator_neurons: int = 400  # a faire varier
+    nb_inhibitor_neurons: int = 400  # a faire varier
     single_example_time = 0.35 * units.second
     resting_time = 0.15 * units.second
     input_intensity = 2
@@ -71,7 +70,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     tc_post_2_ee = 40 * units.ms
     nu_ee_pre = 0.0001  # learning rate à faire varier
     nu_ee_post = 0.01  # learning rate à faire varier
-    wmax_ee = 1.0       #à faire varier
+    wmax_ee = 1.0  # à faire varier
 
     # Training only
     tc_theta = 1e7 * units.ms
@@ -184,13 +183,12 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
             # Run the network
             net.run(single_example_time)
 
-            
             current_spike_count_e = spike_counters_e.count - previous_spike_count_e
             current_spike_count_i = spike_counters_i.count - previous_spike_count_i
 
             evolution_moyenne_spike_e.append(np.average(current_spike_count_e))
             evolution_moyenne_spike_i.append(np.average(current_spike_count_i))
-            
+
             previous_spike_count_e = np.copy(spike_counters_e.count)
             previous_spike_count_i = np.copy(spike_counters_i.count)
             sum_spikes = np.sum(current_spike_count_e)
@@ -207,18 +205,17 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
                 net.run(resting_time)
                 input_intensity = start_input_intensity
                 enough_spikes = True
-                
+
     plt.subplot(211)
     plt.plot(evolution_moyenne_spike_e, label="exitateur")
-    plt.plot(evolution_moyenne_spike_i,  label="inhibiteur")
+    plt.plot(evolution_moyenne_spike_i, label="inhibiteur")
     plt.title("Evolution de la moyenne des décharge exitateur")
     plt.legend()
     plt.subplot(212)
     plt.plot(evolution_moyenne_matrice_poids)
     plt.title("Evolution de la moyenne des poids")
     plt.show()
-    
-    
+
     logging.info(f'Training is over')
 
 
