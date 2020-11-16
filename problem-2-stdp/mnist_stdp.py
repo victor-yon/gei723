@@ -4,17 +4,20 @@ Code adapted from : https://github.com/zxzhijia/Brian2STDPMNIST
 """
 
 import logging
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
 from brian2 import prefs, units, NeuronGroup, Synapses, SpikeMonitor, PoissonGroup, Network
 from sklearn import datasets
 
+LOGGER = logging.getLogger(__name__)
+
 
 def load_data():
-    logging.info('Loading MNIST database...')
+    LOGGER.info('Loading MNIST database...')
     images, labels = datasets.fetch_openml('mnist_784', version=1, return_X_y=True, data_home='./data')
-    logging.info(f'MNIST database loaded: {len(images)} images of dimension {images[0].shape}')
+    LOGGER.info(f'MNIST database loaded: {len(images)} images of dimension {images[0].shape}')
     return images, labels
 
 
@@ -105,11 +108,12 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
                 dpost2/dt  = -post2/(tc_post_2_ee)     : 1 (event-driven)
             '''
     eqs_stdp_pre_ee = 'pre = 1.; w = clip(w - nu_ee_pre * post1, 0, wmax_ee)'
-    eqs_stdp_post_ee = 'post2before = post2; w = clip(w + nu_ee_post * pre * post2before, 0, wmax_ee); post1 = 1.; post2 = 1.'
+    eqs_stdp_post_ee = \
+        'post2before = post2; w = clip(w + nu_ee_post * pre * post2before, 0, wmax_ee); post1 = 1.; post2 = 1.'
 
     # ==================================== Network creation ====================================
 
-    logging.info('Creating excitator and inhibitor neurons...')
+    LOGGER.info('Creating excitator and inhibitor neurons...')
 
     neurons_e = NeuronGroup(nb_excitator_neurons, neuron_eqs_e, threshold=v_thresh_e, refractory=refrac_e, reset=scr_e,
                             method='euler')
@@ -133,7 +137,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     synapses_i_e.connect('i!=j')  # All except one (not diagonal only)
     synapses_i_e.w = '17.0'
 
-    logging.info('Creating input neurons...')
+    LOGGER.info('Creating input neurons...')
 
     neurons_input = PoissonGroup(nb_input_neurons, 0 * units.Hz)
 
@@ -158,7 +162,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     net = Network(neurons_input, neurons_i, neurons_e, synapses_i_e, synapses_e_i, synapses_input_e, spike_counters_e)
 
     # ======================================== Training ========================================
-    logging.info(f'Start training on {nb_train_samples} images')
+    LOGGER.info(f'Start training on {nb_train_samples} images')
 
     previous_spike_count_e = np.zeros(nb_excitator_neurons)
     previous_spike_count_i = np.zeros(nb_inhibitor_neurons)
@@ -170,7 +174,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     # TODO add epoch
     for i, image in enumerate(images[:nb_train_samples]):
-        logging.debug(f'Start step {i:03}/{nb_train_samples} ({i / nb_train_samples * 100:5.2f}%)')
+        LOGGER.debug(f'Start step {i:03}/{nb_train_samples} ({i / nb_train_samples * 100:5.2f}%)')
         enough_spikes = False
 
         while not enough_spikes:
@@ -198,7 +202,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
                 input_intensity += 1
                 neurons_input.rates = 0 * units.Hz
                 net.run(resting_time)
-                logging.debug(
+                LOGGER.debug(
                     f'Not enough spikes ({sum_spikes}), retry with higher intensity level ({input_intensity})')
             else:
                 neurons_input.rates = 0 * units.Hz
@@ -216,11 +220,12 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     plt.title("Evolution de la moyenne des poids")
     plt.show()
 
-    logging.info(f'Training is over')
+    LOGGER.info(f'Training is over')
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
-    logging.info('Beginning of execution')
+    logging.basicConfig(stream=sys.stdout, format='%(asctime)s [%(levelname)s] %(message)s')
+    LOGGER.setLevel(logging.DEBUG)
+    LOGGER.info('Beginning of execution')
 
-    run(nb_train_samples=50, nb_test_samples=50)
+    run(nb_train_samples=10, nb_test_samples=50)
