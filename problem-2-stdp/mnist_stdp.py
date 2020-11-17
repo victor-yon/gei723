@@ -152,11 +152,11 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
         '''
 
     eqs_stdp_ee = '''
-                post2before                            : 1
-                dpre/dt   =   -pre/(tc_pre_ee)         : 1 (event-driven)
-                dpost1/dt  = -post1/(tc_post_1_ee)     : 1 (event-driven)
-                dpost2/dt  = -post2/(tc_post_2_ee)     : 1 (event-driven)
-            '''
+        post2before                            : 1
+        dpre/dt   =   -pre/(tc_pre_ee)         : 1 (event-driven)
+        dpost1/dt  = -post1/(tc_post_1_ee)     : 1 (event-driven)
+        dpost2/dt  = -post2/(tc_post_2_ee)     : 1 (event-driven)
+    '''
     eqs_stdp_pre_ee = 'pre = 1.; w = clip(w - nu_ee_pre * post1, 0, wmax_ee)'
     eqs_stdp_post_ee = \
         'post2before = post2; w = clip(w + nu_ee_post * pre * post2before, 0, wmax_ee); post1 = 1.; post2 = 1.'
@@ -217,7 +217,8 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     mon_i_e = StateMonitor(synapses_i_e, 'w', record=[0, 1])
 
     # Construct the network
-    net = Network(neurons_input, neurons_i, neurons_e, synapses_i_e, synapses_e_i, synapses_input_e, spike_counters_e)
+    net = Network(neurons_input, neurons_i, neurons_e, synapses_i_e, synapses_e_i, synapses_input_e, spike_counters_e,
+                  spike_counters_i)
 
     time_msg = Stopwatch.stopping('network_creation')
     LOGGER.info(f'Network created. {time_msg}.')
@@ -239,7 +240,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     neurons_input.rates = 0 * units.Hz  # Necessary?
     net.run(0 * units.second)  # Why?
-    count_activation_map = np.zeros([1,nb_excitator_neurons])
+    count_activation_map = np.zeros([1, nb_excitator_neurons])
 
     # TODO add epoch
     for i, (image, label) in enumerate(zip(images[:nb_train_samples], labels[:nb_train_samples])):
@@ -264,15 +265,19 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
             previous_spike_count_e = np.copy(spike_counters_e.count)
             previous_spike_count_i = np.copy(spike_counters_i.count)
-            sum_spikes = np.sum(current_spike_count_e)
+            current_sum_spikes_e = np.sum(current_spike_count_e)
+            current_sum_spikes_i = np.sum(current_spike_count_i)
+
+            LOGGER.debug(
+                f'Number of excitatory spikes: {current_sum_spikes_e} | inhibitor spikes: {current_sum_spikes_i}')
 
             # Check if enough spike triggered, if under the limit start again with the same image
-            if sum_spikes < 5:
+            if current_sum_spikes_e < 5:
                 input_intensity += 1
                 neurons_input.rates = 0 * units.Hz
                 net.run(resting_time)
                 LOGGER.debug(
-                    f'Not enough spikes ({sum_spikes}), retry with higher intensity level ({input_intensity})')
+                    f'Not enough spikes ({current_sum_spikes_e}), retry with higher intensity level ({input_intensity})')
             else:
                 # Store spike activity
                 spike_per_label[int(label)] += current_spike_count_e
@@ -413,15 +418,15 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
             # Since the network is reset everytime, the previous_spike_count_e can stay the same
             # previous_spike_count_e = np.copy(spike_counters_e.count)
 
-            sum_spikes = np.sum(current_spike_count_e)
+            current_sum_spikes_e = np.sum(current_spike_count_e)
 
             # Check if enough spike triggered, if under the limit start again with the same image
-            if sum_spikes < 5:
+            if current_sum_spikes_e < 5:
                 input_intensity += 1
                 neurons_input.rates = 0 * units.Hz
                 net.run(resting_time)
                 LOGGER.debug(
-                    f'Not enough spikes ({sum_spikes}), retry with higher intensity level ({input_intensity})')
+                    f'Not enough spikes ({current_sum_spikes_e}), retry with higher intensity level ({input_intensity})')
             else:
                 # Reset network
                 neurons_input.rates = 0 * units.Hz
