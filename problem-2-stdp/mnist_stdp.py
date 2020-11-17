@@ -283,7 +283,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
                 enough_spikes = True
 
-<<<<<<< Updated upstream
+
             if enough_spikes == True & len(count_activation_map) < 5 * nb_excitator_neurons:
                 count_activation_map.append(current_spike_count_e)
 
@@ -296,34 +296,34 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     Stopwatch.starting('plotting')
     LOGGER.info(f'Start plotting...')
-=======
+
             if enough_spikes is True and np.size(count_activation_map, axis=0) < 5:
                 count_activation_map = np.concatenate((count_activation_map, current_spike_count_e))
                 print('allo')
->>>>>>> Stashed changes
-
 
     print(count_activation_map)
 
-    plt.subplot(211)
+    plt.figure()
     plt.plot(evolution_moyenne_spike_e, label="exitateur")
     plt.plot(evolution_moyenne_spike_i, label="inhibiteur")
     plt.title("Evolution de la moyenne des décharge exitateur")
     plt.legend()
-    plt.subplot(212)
-    plt.plot(evolution_moyenne_matrice_poids)
-    plt.title("Evolution de la moyenne des poids")
+    # plt.subplot(212)
+    # plt.plot(evolution_moyenne_matrice_poids)
+    # plt.title("Evolution de la moyenne des poids")
     plt.show()
 
     plt.figure()
-    plt.plot(volt_mon_e.t / units.second, volt_mon_e.v[0])
-    plt.plot(volt_mon_i.t / units.second, volt_mon_i.v[0])
-    plt.title('Potentiel neuron exc et inhib')
+    plt.plot(volt_mon_e.t / units.second, volt_mon_e.v[0], label='excitator')
+    plt.plot(volt_mon_i.t / units.second, volt_mon_i.v[0], label='inhibitor')
+    plt.title('Potentiel firtst neuron exc et inhib')
+    plt.legend()
     plt.show()
 
     # Activation map graph
     plt.figure()
-    plt.plot(range(len(current_spike_count_e)), count_activation_map[1])
+    for i in range(len(count_activation_map)):
+    plt.plot(range(len(current_spike_count_e)), count_activation_map[i])
     # plot chaque ligne de la matrice spike pour la carte d'activation
     plt.title('Carte d'' activation')
     plt.show()
