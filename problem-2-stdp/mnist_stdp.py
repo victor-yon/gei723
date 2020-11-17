@@ -8,7 +8,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-from brian2 import prefs, units, NeuronGroup, Synapses, SpikeMonitor, PoissonGroup, Network
+from brian2 import prefs, units, NeuronGroup, Synapses, SpikeMonitor, PoissonGroup, Network, StateMonitor
 from sklearn import datasets
 
 from util_plots import img_show
@@ -63,6 +63,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     resting_time = 0.15 * units.second
     input_intensity = 2
     start_input_intensity = input_intensity
+    COURBES = 10
 
     offset = 20.0 * units.mV
     v_rest_e = -65. * units.mV
@@ -159,6 +160,13 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     synapses_input_e.connect(True)  # All to all
     synapses_input_e.w = 'rand() * 0.3'
 
+    volt_mon_e = StateMonitor(neurons_e, 'v', record=[0, 1])
+    volt_mon_i = StateMonitor(neurons_i, 'v', record=[0, 1])
+
+    mon_input = StateMonitor(synapses_input_e, 'w', record = [0, 1])
+    mon_e_i = StateMonitor(synapses_e_i, 'w', record = [0, 1])
+    mon_i_e = StateMonitor(synapses_i_e, 'w', record = [0, 1])
+
     min_delay = 0 * units.ms
     max_delay = 10 * units.ms
     delta_delay = max_delay - min_delay
@@ -176,6 +184,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     evolution_moyenne_matrice_poids = []
     neurons_input.rates = 0 * units.Hz  # Necessary?
     net.run(0 * units.second)  # Why?
+    count_activation_map = []
 
     # TODO add epoch
     for i, image in enumerate(images[:nb_train_samples]):
@@ -217,6 +226,9 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
                 enough_spikes = True
 
+            if enough_spikes == True & len(count_activation_map) < 5*nb_excitator_neurons:
+                count_activation_map.append(current_spike_count_e)
+
     plt.subplot(211)
     plt.plot(evolution_moyenne_spike_e, label="exitateur")
     plt.plot(evolution_moyenne_spike_i, label="inhibiteur")
@@ -228,6 +240,76 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     plt.show()
 
     LOGGER.info(f'Training completed')
+
+    plt.figure()
+    plt.plot(volt_mon_e.t/units.second, volt_mon_e.v[0])
+    plt.plot(volt_mon_i.t/units.second, volt_mon_i.v[0])
+    plt.title('Potentiel neuron exc et inhib')
+    plt.show()
+
+
+    # Activation map graph
+    plt.figure()
+    plt.plot(range(len(current_spike_count_e)), count_activation_map[0])
+    # plot chaque ligne de la matrice spike pour la carte d'activation
+    plt.title('Carte d'' activation')
+    plt.show()
+
+    # Courbes d'accord
+    # plt.figure()
+    # plt.plot(cou)
+    # # plot les colonnes de spikes pour avoir les courbes d'accord. Pas toutes les faire car beaucoup trop
+    # plt.title(f"Échantillon des courbes d''accord des {COURBES} premiers neurones")
+    # plt.show()
+
+    # Histogramme des courbes d'accord
+    fig = plt.figure()
+    plt.hist(synapses_input_e.w, bins=10, edgecolor='black')
+    bins = range(1, 11)
+    plt.title(f"répartition des poids selon leur valeur après {nb_train_samples} itérations")
+    plt.show()
+
+    # Average of weights with the number of samples
+    # plt.figure()
+    # plt.title(f"Moyenne des poids après {nb_train_samples} itération")
+    # plt.plot(evolution_moyenne_matrice_poids)
+    # plt.show()
+
+    plt.subplot(211)
+    plt.title('Synapses input to exc')
+    plt.plot(synapses_input_e.w, '.k')
+    plt.ylabel('Weights')
+    plt.xlabel('Synapses index')
+    plt.subplot(212)
+    plt.plot(mon_input.t/units.second, mon_input.w.T)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Weight')
+    plt.tight_layout()
+    plt.show()
+
+    plt.subplot(211)
+    plt.title('Synapses exc to inh')
+    plt.plot(synapses_e_i.w, '.k')
+    plt.ylabel('Weights')
+    plt.xlabel('Synapses index')
+    plt.subplot(212)
+    plt.plot(mon_e_i.t/units.second, mon_e_i.w.T)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Weight')
+    plt.tight_layout()
+    plt.show()
+
+    plt.subplot(211)
+    plt.title('Synapses inh to exc')
+    plt.plot(synapses_i_e.w, '.k')
+    plt.ylabel('Weights')
+    plt.xlabel('Synapses index')
+    plt.subplot(212)
+    plt.plot(mon_i_e.t/units.second, mon_i_e.w.T)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Weight')
+    plt.tight_layout()
+    plt.show()
 
     # ======================================== Testing =========================================
 
