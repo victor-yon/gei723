@@ -39,7 +39,7 @@ def load_data():
         pickle.dump((images, labels), open(save_path, 'wb'))
 
     time_msg = Stopwatch.stopping('load_data')
-    LOGGER.info(f'MNIST database loaded: {len(images)} images of dimension {images[0].shape}. {time_msg}')
+    LOGGER.info(f'MNIST database loaded: {len(images)} images of dimension {images[0].shape}. {time_msg}.')
 
     # Show the first 9 images
     img_show(images[:9].reshape(9, 28, 28), 'Examples d\'images du jeu de données MNIST', labels[:9])
@@ -164,6 +164,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     # ==================================== Network creation ====================================
 
     LOGGER.info('Creating excitator and inhibitor neurons...')
+    Stopwatch.starting('network_creation')
 
     neurons_e = NeuronGroup(nb_excitator_neurons, neuron_eqs_e, threshold=v_thresh_e, refractory=refrac_e, reset=scr_e,
                             method='euler')
@@ -217,8 +218,13 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     # Construct the network
     net = Network(neurons_input, neurons_i, neurons_e, synapses_i_e, synapses_e_i, synapses_input_e, spike_counters_e)
 
+    time_msg = Stopwatch.stopping('network_creation')
+    LOGGER.info(f'Network created. {time_msg}.')
+
     # ======================================== Training ========================================
-    LOGGER.info(f'Start training on {nb_train_samples} images')
+
+    LOGGER.info(f'Start training on {nb_train_samples} images...')
+    Stopwatch.starting('training')
 
     previous_spike_count_e = np.zeros(nb_excitator_neurons)
     previous_spike_count_i = np.zeros(nb_inhibitor_neurons)
@@ -282,7 +288,13 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     labeled_neurons = chose_labeled_neurons(spike_per_label)
 
+    time_msg = Stopwatch.stopping('training', nb_train_samples)
+    LOGGER.info(f'Training completed. {time_msg}.')
+
     # ========================================= Plots ==========================================
+
+    Stopwatch.starting('plotting')
+    LOGGER.info(f'Start plotting...')
 
     plt.subplot(211)
     plt.plot(evolution_moyenne_spike_e, label="exitateur")
@@ -293,8 +305,6 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     plt.plot(evolution_moyenne_matrice_poids)
     plt.title("Evolution de la moyenne des poids")
     plt.show()
-
-    LOGGER.info(f'Training completed')
 
     plt.figure()
     plt.plot(volt_mon_e.t / units.second, volt_mon_e.v[0])
@@ -365,9 +375,13 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     plt.tight_layout()
     plt.show()
 
+    time_msg = Stopwatch.stopping('plotting')
+    LOGGER.info(f'Plotting completed. {time_msg}.')
+
     # ======================================== Testing =========================================
 
-    LOGGER.info(f'Start testing on {nb_test_samples} images')
+    Stopwatch.starting('testing')
+    LOGGER.info(f'Start testing on {nb_test_samples} images...')
 
     # TODO disable learning
     net.store()  # If remove the also re enable previous_spike_count_e
@@ -422,7 +436,9 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
                 enough_spikes = True
 
-    LOGGER.info(f'Testing completed')
+    time_msg = Stopwatch.stopping('testing', nb_test_samples)
+    LOGGER.info(f'Testing completed. {time_msg}.')
+
     LOGGER.info(f'Final accuracy on {nb_test_samples} images: {nb_correct / nb_test_samples * 100:.5}%')
 
 

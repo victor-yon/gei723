@@ -60,9 +60,10 @@ class Stopwatch:
         """ Stop the stop watch """
         self._end = time()
 
-    def log(self) -> str:
+    def log(self, nb_item: int = 0) -> str:
         """
         Generate a human readable string which summary the current state of this stopwatch.
+        :param nb_item: Number of item processed since the start.
         :return: A human readable summary of the current state.
         """
 
@@ -71,11 +72,21 @@ class Stopwatch:
 
         if not self._end:
             delta = time() - self._start
-            return f"Duration so far: {duration_to_str(delta)}"
+            msg = f"Duration so far: {duration_to_str(delta)}"
+
+            if nb_item > 0:
+                msg += f' ({duration_to_str(delta / nb_item)} / item)'
+
+            return msg
 
         else:
             delta = self._end - self._start
-            return f"Duration: {duration_to_str(delta)}"
+            msg = f"Duration: {duration_to_str(delta)}"
+
+            if nb_item > 0:
+                msg += f' ({duration_to_str(delta / nb_item)} / item)'
+
+            return msg
 
     @staticmethod
     def starting(timer_name: str) -> None:
@@ -88,15 +99,16 @@ class Stopwatch:
         Stopwatch._timers[timer_name].start()
 
     @staticmethod
-    def stopping(timer_name: str) -> str:
+    def stopping(timer_name: str, nb_item: int = 0) -> str:
         """
         Stop and delete a stopwatch with specified name.
+        :param nb_item: Number of item processed since the start.
         :param timer_name: The name of the stopwatch
         :return: A human readable summary of the final state of the stopped stopwatch.
         """
         if timer_name in Stopwatch._timers:
             Stopwatch._timers[timer_name].stop()
-            log_msg = Stopwatch._timers[timer_name].log()
+            log_msg = Stopwatch._timers[timer_name].log(nb_item)
             del Stopwatch._timers[timer_name]
             return log_msg
         else:
