@@ -200,8 +200,13 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     model += eqs_stdp_ee
     on_pre += '; ' + eqs_stdp_pre_ee
 
+    min_delay = 0 * units.ms
+    max_delay = 10 * units.ms
+    delta_delay = max_delay - min_delay
+
     synapses_input_e = Synapses(neurons_input, neurons_e, model=model, on_pre=on_pre, on_post=on_post)
     synapses_input_e.connect(True)  # All to all
+    synapses_input_e.delay = 'min_delay + rand() * delta_delay'
     synapses_input_e.w = 'rand() * 0.3'
 
     volt_mon_e = StateMonitor(neurons_e, 'v', record=[0, 1])
@@ -210,10 +215,6 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     mon_input = StateMonitor(synapses_input_e, 'w', record=[0, 1])
     mon_e_i = StateMonitor(synapses_e_i, 'w', record=[0, 1])
     mon_i_e = StateMonitor(synapses_i_e, 'w', record=[0, 1])
-
-    min_delay = 0 * units.ms
-    max_delay = 10 * units.ms
-    delta_delay = max_delay - min_delay
 
     # Construct the network
     net = Network(neurons_input, neurons_i, neurons_e, synapses_i_e, synapses_e_i, synapses_input_e, spike_counters_e)
