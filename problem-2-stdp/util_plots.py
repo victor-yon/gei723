@@ -82,7 +82,7 @@ def stdp_shape(eqs_stdp: str, on_pre: str, on_post: str, neuron_threshold: int =
 
 def img_show(images, title: str = '', ground_truth: List[str] = None, prediction_success: List[bool] = None) -> None:
     """
-    Show a set of image.
+    Show a set of images.
 
     :param images: A list of torch tensor images
     :param title: The title of the figure

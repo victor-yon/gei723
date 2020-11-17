@@ -180,7 +180,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     # TODO add epoch
     for i, image in enumerate(images[:nb_train_samples]):
-        LOGGER.debug(f'Start step {i:03}/{nb_train_samples} ({i / nb_train_samples * 100:5.2f}%)')
+        LOGGER.debug(f'Start training step {i + 1:03}/{nb_train_samples} ({i / nb_train_samples * 100:5.2f}%)')
         enough_spikes = False
 
         while not enough_spikes:
@@ -211,9 +211,11 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
                 LOGGER.debug(
                     f'Not enough spikes ({sum_spikes}), retry with higher intensity level ({input_intensity})')
             else:
+                # Reset network
                 neurons_input.rates = 0 * units.Hz
                 net.run(resting_time)
                 input_intensity = start_input_intensity
+
                 enough_spikes = True
 
     plt.subplot(211)
@@ -226,7 +228,63 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     plt.title("Evolution de la moyenne des poids")
     plt.show()
 
-    LOGGER.info(f'Training is over')
+    LOGGER.info(f'Training completed')
+
+    # ======================================== Testing =========================================
+
+    LOGGER.info(f'Start testing on {nb_test_samples} images')
+
+    # TODO disable learning
+    net.store()  # If remove the also re enable previous_spike_count_e
+
+    neurons_input.rates = 0 * units.Hz  # Necessary?
+    net.run(0 * units.second)  # Why?
+
+    # Array to store results
+    result_monitor = np.zeros((nb_test_samples, nb_excitator_neurons))
+    input_labels = np.zeros(nb_test_samples)
+
+    for i, (image, labels) in enumerate(
+            zip(images[60000:60000 + nb_test_samples], labels[60000:60000 + nb_test_samples])):
+        LOGGER.debug(f'Start testing step {i + 1:03}/{nb_test_samples} ({i / nb_test_samples * 100:5.2f}%)')
+        enough_spikes = False
+
+        # Restore the network everytime because we don't disable the learning
+        net.restore()
+
+        while not enough_spikes:
+            input_rates = image.reshape((nb_input_neurons)) / 8 * input_intensity
+            neurons_input.rates = input_rates * units.Hz
+
+            # Run the network
+            net.run(single_example_time)
+
+            current_spike_count_e = spike_counters_e.count - previous_spike_count_e
+            # Since the network is reset everytime, the previous_spike_count_e can stay the same
+            # previous_spike_count_e = np.copy(spike_counters_e.count)
+
+            sum_spikes = np.sum(current_spike_count_e)
+
+            # Check if enough spike triggered, if under the limit start again with the same image
+            if sum_spikes < 5:
+                input_intensity += 1
+                neurons_input.rates = 0 * units.Hz
+                net.run(resting_time)
+                LOGGER.debug(
+                    f'Not enough spikes ({sum_spikes}), retry with higher intensity level ({input_intensity})')
+            else:
+                # Store results
+                result_monitor[i, :] = current_spike_count_e
+                input_labels[i] = labels
+
+                # Reset network
+                neurons_input.rates = 0 * units.Hz
+                net.run(resting_time)
+                input_intensity = start_input_intensity
+
+                enough_spikes = True
+
+    LOGGER.info(f'Testing completed')
 
 
 if __name__ == '__main__':
@@ -234,4 +292,4 @@ if __name__ == '__main__':
     LOGGER.setLevel(logging.DEBUG)
     LOGGER.info('Beginning of execution')
 
-    run(nb_train_samples=10, nb_test_samples=50)
+    run(nb_train_samples=50, nb_test_samples=50)
