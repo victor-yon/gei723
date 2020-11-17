@@ -5,7 +5,6 @@ Code adapted from : https://github.com/zxzhijia/Brian2STDPMNIST
 
 import logging
 import pickle
-import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -16,7 +15,7 @@ from sklearn import datasets
 from stopwatch import Stopwatch
 from util_plots import img_show
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger('mnist_stdp')
 DATA_DIR = './data'
 
 
@@ -89,6 +88,8 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     if nb_test_samples > 10000:
         raise ValueError('The number of test sample can\'t be more than 10000')
 
+    LOGGER.info('Beginning of execution')
+
     # Brian code generation target (optimization?)
     prefs.codegen.target = 'cython'
 
@@ -112,77 +113,87 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     v_rest_e = -65. * units.mV
     v_rest_i = -60. * units.mV
     v_reset_e = -65. * units.mV
-    v_reset_i = 'v=-45.*mV'
-    v_thresh_e = '(v>(theta - offset + -52.*mV)) and (timer>refrac_e)'
-    v_thresh_i = 'v>-40.*mV'
+    v_reset_i = -45 * units.mV
+    v_thresh_e = -52 * units.mV  # Will also include theta, offset and timer
+    v_thresh_i = -40 * units.mV
     refrac_e = 5. * units.ms
     refrac_i = 2. * units.ms
 
-    tc_pre_ee = 20 * units.ms
-    tc_post_1_ee = 20 * units.ms
-    tc_post_2_ee = 40 * units.ms
-    nu_ee_pre = 0.0001  # learning rate à faire varier
-    nu_ee_post = 0.01  # learning rate à faire varier
-    wmax_ee = 1.0  # à faire varier
+    tc_pre = 20 * units.ms
+    tc_post_1 = 20 * units.ms
+    tc_post_2 = 40 * units.ms
+    nu_pre = 0.0001  # learning rate à faire varier
+    nu_post = 0.01  # learning rate à faire varier
+    wmax = 1.0  # à faire varier
 
-    # Training only
     tc_theta = 1e7 * units.ms
-    theta_plus_e = 0.05 * units.mV
-    scr_e = 'v = v_reset_e; theta += theta_plus_e; timer = 0*ms'
+    theta_plus = 0.05 * units.mV
 
     neuron_eqs_e = '''
-        dv/dt = ((v_rest_e - v) + (I_synE+I_synI) / nS) / (100*ms)  : volt (unless refractory)
+        dv/dt  = ((v_rest_e - v) + (I_synE+I_synI) / nS) / (100*ms) : volt (unless refractory)
         I_synE = ge * nS * -v                                       : amp
         I_synI = gi * nS * (-100.*mV-v)                             : amp
         dge/dt = -ge/(1.0*ms)                                       : 1
         dgi/dt = -gi/(2.0*ms)                                       : 1
+        dtheta/dt = -theta / (tc_theta)                             : volt
+        dtimer/dt = 0.1                                             : second
         '''
 
-    # Training only
-    neuron_eqs_e += '\n  dtheta/dt = -theta / (tc_theta)  : volt'
-
-    neuron_eqs_e += '\n  dtimer/dt = 0.1  : second'
-
     neuron_eqs_i = '''
-        dv/dt = ((v_rest_i - v) + (I_synE+I_synI) / nS) / (10*ms)  : volt (unless refractory)
+        dv/dt  = ((v_rest_i - v) + (I_synE+I_synI) / nS) / (10*ms) : volt (unless refractory)
         I_synE = ge * nS * -v                                      : amp
         I_synI = gi * nS * (-85.*mV-v)                             : amp
         dge/dt = -ge/(1.0*ms)                                      : 1
         dgi/dt = -gi/(2.0*ms)                                      : 1
         '''
 
-    eqs_stdp_ee = '''
-        post2before                            : 1
-        dpre/dt   =   -pre/(tc_pre_ee)         : 1 (event-driven)
-        dpost1/dt  = -post1/(tc_post_1_ee)     : 1 (event-driven)
-        dpost2/dt  = -post2/(tc_post_2_ee)     : 1 (event-driven)
+    eqs_stdp = '''
+        w                               : 1
+        post2before                     : 1
+        dpre/dt    = -pre/(tc_pre)      : 1 (event-driven)
+        dpost1/dt  = -post1/(tc_post_1) : 1 (event-driven)
+        dpost2/dt  = -post2/(tc_post_2) : 1 (event-driven)
     '''
-    eqs_stdp_pre_ee = 'pre = 1.; w = clip(w - nu_ee_pre * post1, 0, wmax_ee)'
-    eqs_stdp_post_ee = \
-        'post2before = post2; w = clip(w + nu_ee_post * pre * post2before, 0, wmax_ee); post1 = 1.; post2 = 1.'
+
+    eqs_stdp_pre = '''
+        ge_post += w
+        pre = 1
+        w = clip(w - nu_pre * post1, 0, wmax)
+    '''
+
+    eqs_stdp_post = '''
+        post2before = post2
+        w = clip(w + nu_post * pre * post2before, 0, wmax)
+        post1 = 1
+        post2 = 1
+    '''
 
     # ==================================== Network creation ====================================
 
     LOGGER.info('Creating excitator and inhibitor neurons...')
     Stopwatch.starting('network_creation')
 
-    neurons_e = NeuronGroup(nb_excitator_neurons, neuron_eqs_e, threshold=v_thresh_e, refractory=refrac_e, reset=scr_e,
+    # Neuron excitator
+    neurons_e = NeuronGroup(nb_excitator_neurons, neuron_eqs_e,
+                            threshold='(v > (theta - offset + v_thresh_e)) and (timer > refrac_e)', refractory=refrac_e,
+                            reset='v = v_reset_e; theta += theta_plus; timer = 0*ms',
                             method='euler')
-    neurons_i = NeuronGroup(nb_inhibitor_neurons, neuron_eqs_i, threshold=v_thresh_i, refractory=refrac_i,
-                            reset=v_reset_i, method='euler')
+    neurons_e.v = v_rest_e - 40. * units.mV
+
+    # Neuron inhibitor
+    neurons_i = NeuronGroup(nb_inhibitor_neurons, neuron_eqs_i, threshold='v > v_thresh_i', refractory=refrac_i,
+                            reset='v = v_reset_i', method='euler')
+    neurons_i.v = v_rest_i - 40. * units.mV
 
     spike_counters_e = SpikeMonitor(neurons_e, record=False)
     spike_counters_i = SpikeMonitor(neurons_i, record=False)
-
-    neurons_e.v = v_rest_e - 40. * units.mV
-    neurons_i.v = v_rest_i - 40. * units.mV
 
     # Training only
     neurons_e.theta = np.ones(nb_excitator_neurons) * 20.0 * units.mV
 
     synapses_e_i = Synapses(neurons_e, neurons_i, model='w : 1', on_pre='ge_post += w')
     synapses_e_i.connect(condition='i==j')  # One to one (diagonal only)
-    synapses_e_i.w = '10.4'  # Not random?
+    synapses_e_i.w = '10.4'
 
     synapses_i_e = Synapses(neurons_i, neurons_e, model='w : 1', on_pre='gi_post += w')
     synapses_i_e.connect(condition='i!=j')  # All except one (not diagonal only)
@@ -192,19 +203,11 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     neurons_input = PoissonGroup(nb_input_neurons, 0 * units.Hz)
 
-    model = 'w : 1'
-    on_pre = 'ge_post += w'
-    on_post = eqs_stdp_post_ee
-
-    # Training only
-    model += eqs_stdp_ee
-    on_pre += '; ' + eqs_stdp_pre_ee
-
     min_delay = 0 * units.ms
     max_delay = 10 * units.ms
     delta_delay = max_delay - min_delay
 
-    synapses_input_e = Synapses(neurons_input, neurons_e, model=model, on_pre=on_pre, on_post=on_post)
+    synapses_input_e = Synapses(neurons_input, neurons_e, model=eqs_stdp, on_pre=eqs_stdp_pre, on_post=eqs_stdp_post)
     synapses_input_e.connect(True)  # All to all
     synapses_input_e.delay = 'min_delay + rand() * delta_delay'
     synapses_input_e.w = 'rand() * 0.3'
@@ -448,11 +451,3 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     LOGGER.info(f'Testing completed. {time_msg}.')
 
     LOGGER.info(f'Final accuracy on {nb_test_samples} images: {nb_correct / nb_test_samples * 100:.5}%')
-
-
-if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stdout, format='%(asctime)s [%(levelname)s] %(message)s')
-    LOGGER.setLevel(logging.DEBUG)
-    LOGGER.info('Beginning of execution')
-
-    run(nb_train_samples=20, nb_test_samples=20)
