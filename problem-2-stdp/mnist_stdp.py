@@ -283,9 +283,8 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
                 enough_spikes = True
 
-
-            if enough_spikes == True & len(count_activation_map) < 5 * nb_excitator_neurons:
-                count_activation_map.append(current_spike_count_e)
+            # if enough_spikes is True and np.size(count_activation_map, axis=0) < 5:
+            #     count_activation_map = np.concatenate((count_activation_map, current_spike_count_e))
 
     labeled_neurons = chose_labeled_neurons(spike_per_label)
 
@@ -296,12 +295,6 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     Stopwatch.starting('plotting')
     LOGGER.info(f'Start plotting...')
-
-            if enough_spikes is True and np.size(count_activation_map, axis=0) < 5:
-                count_activation_map = np.concatenate((count_activation_map, current_spike_count_e))
-                print('allo')
-
-    print(count_activation_map)
 
     plt.figure()
     plt.plot(evolution_moyenne_spike_e, label="exitateur")
@@ -321,12 +314,12 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     plt.show()
 
     # Activation map graph
-    plt.figure()
-    for i in range(len(count_activation_map)):
-    plt.plot(range(len(current_spike_count_e)), count_activation_map[i])
-    # plot chaque ligne de la matrice spike pour la carte d'activation
-    plt.title('Carte d'' activation')
-    plt.show()
+    # plt.figure()
+    # for i in range(len(count_activation_map)):
+    #     plt.plot(range(len(current_spike_count_e)), count_activation_map[i])
+    # # plot chaque ligne de la matrice spike pour la carte d'activation
+    # plt.title('Carte d'' activation')
+    # plt.show()
 
     # Courbes d'accord
     # plt.figure()
