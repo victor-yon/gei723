@@ -11,6 +11,8 @@ import numpy as np
 from brian2 import prefs, units, NeuronGroup, Synapses, SpikeMonitor, PoissonGroup, Network
 from sklearn import datasets
 
+from util_plots import img_show
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -18,6 +20,10 @@ def load_data():
     LOGGER.info('Loading MNIST database...')
     images, labels = datasets.fetch_openml('mnist_784', version=1, return_X_y=True, data_home='./data')
     LOGGER.info(f'MNIST database loaded: {len(images)} images of dimension {images[0].shape}')
+
+    # Show the first 9 images
+    img_show(images[:9].reshape(9, 28, 28), 'Examples d\'images du jeu de données MNIST', labels[:9])
+
     return images, labels
 
 
