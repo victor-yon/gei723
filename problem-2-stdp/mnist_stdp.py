@@ -136,11 +136,11 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     neurons_e.theta = np.ones(nb_excitator_neurons) * 20.0 * units.mV
 
     synapses_e_i = Synapses(neurons_e, neurons_i, model='w : 1', on_pre='ge_post += w')
-    synapses_e_i.connect('i==j')  # One to one (diagonal only)
+    synapses_e_i.connect(condition='i==j')  # One to one (diagonal only)
     synapses_e_i.w = '10.4'  # Not random?
 
-    synapses_i_e = Synapses(neurons_i, neurons_e, model='w: 1', on_pre='gi_post += w')
-    synapses_i_e.connect('i!=j')  # All except one (not diagonal only)
+    synapses_i_e = Synapses(neurons_i, neurons_e, model='w : 1', on_pre='gi_post += w')
+    synapses_i_e.connect(condition='i!=j')  # All except one (not diagonal only)
     synapses_i_e.w = '17.0'
 
     LOGGER.info('Creating input neurons...')
@@ -149,12 +149,11 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     model = 'w : 1'
     on_pre = 'ge_post += w'
-    on_post = ''
+    on_post = eqs_stdp_post_ee
 
     # Training only
     model += eqs_stdp_ee
     on_pre += '; ' + eqs_stdp_pre_ee
-    on_post = eqs_stdp_post_ee
 
     synapses_input_e = Synapses(neurons_input, neurons_e, model=model, on_pre=on_pre, on_post=on_post)
     synapses_input_e.connect(True)  # All to all
