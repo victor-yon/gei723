@@ -238,7 +238,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     neurons_input.rates = 0 * units.Hz  # Necessary?
     net.run(0 * units.second)  # Why?
-    count_activation_map = []
+    count_activation_map = np.zeros([1,nb_excitator_neurons])
 
     # TODO add epoch
     for i, (image, label) in enumerate(zip(images[:nb_train_samples], labels[:nb_train_samples])):
@@ -283,6 +283,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
                 enough_spikes = True
 
+<<<<<<< Updated upstream
             if enough_spikes == True & len(count_activation_map) < 5 * nb_excitator_neurons:
                 count_activation_map.append(current_spike_count_e)
 
@@ -295,6 +296,14 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     Stopwatch.starting('plotting')
     LOGGER.info(f'Start plotting...')
+=======
+            if enough_spikes is True and np.size(count_activation_map, axis=0) < 5:
+                count_activation_map = np.concatenate((count_activation_map, current_spike_count_e))
+                print('allo')
+>>>>>>> Stashed changes
+
+
+    print(count_activation_map)
 
     plt.subplot(211)
     plt.plot(evolution_moyenne_spike_e, label="exitateur")
@@ -314,7 +323,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     # Activation map graph
     plt.figure()
-    plt.plot(range(len(current_spike_count_e)), count_activation_map[0])
+    plt.plot(range(len(current_spike_count_e)), count_activation_map[1])
     # plot chaque ligne de la matrice spike pour la carte d'activation
     plt.title('Carte d'' activation')
     plt.show()
