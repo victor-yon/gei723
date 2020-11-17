@@ -40,6 +40,31 @@ def normalize_weights(synapses_input_e):
     synapses_input_e.w = temp_conn[synapses_input_e.i, synapses_input_e.j]
 
 
+def chose_labeled_neurons(spike_activities, input_labels):
+    """
+    Chose the best neuron to recognise each label.
+
+    :param spike_activities: The spiking activity for each input, for each excitatory neuron.
+    :param input_labels: The label of each input corresponding to the recorded activity.
+    :return: A list a index of excitatory neuron that spike the most for each label.
+    """
+    # TODO selectioner le neurone qui décharge le plus pour chaque label
+    return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+
+def infer_label(spike_activity, labeled_neurons):
+    """
+    Infer the label of an image based on the spiking activity of the excitatory neurons.
+    Using the labeled neurons.
+
+    :param spike_activity: The spiking activity of each neurons of the excitatory group for an input.
+    :param labeled_neurons: The list of labeled neurons computed.
+    :return: The best guess of label.
+    """
+    # TODO Selectionner le bon label
+    return 0
+
+
 def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     if nb_train_samples > 60000:
         raise ValueError('The number of train sample can\'t be more than 60000')
@@ -163,9 +188,9 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     volt_mon_e = StateMonitor(neurons_e, 'v', record=[0, 1])
     volt_mon_i = StateMonitor(neurons_i, 'v', record=[0, 1])
 
-    mon_input = StateMonitor(synapses_input_e, 'w', record = [0, 1])
-    mon_e_i = StateMonitor(synapses_e_i, 'w', record = [0, 1])
-    mon_i_e = StateMonitor(synapses_i_e, 'w', record = [0, 1])
+    mon_input = StateMonitor(synapses_input_e, 'w', record=[0, 1])
+    mon_e_i = StateMonitor(synapses_e_i, 'w', record=[0, 1])
+    mon_i_e = StateMonitor(synapses_i_e, 'w', record=[0, 1])
 
     min_delay = 0 * units.ms
     max_delay = 10 * units.ms
@@ -179,15 +204,21 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     previous_spike_count_e = np.zeros(nb_excitator_neurons)
     previous_spike_count_i = np.zeros(nb_inhibitor_neurons)
+
     evolution_moyenne_spike_e = []
     evolution_moyenne_spike_i = []
     evolution_moyenne_matrice_poids = []
+
+    # Array to store spike activity for each excitatory neurons
+    spike_activities = np.zeros((nb_test_samples, nb_excitator_neurons))
+    input_labels = np.zeros(nb_test_samples)
+
     neurons_input.rates = 0 * units.Hz  # Necessary?
     net.run(0 * units.second)  # Why?
     count_activation_map = []
 
     # TODO add epoch
-    for i, image in enumerate(images[:nb_train_samples]):
+    for i, (image, label) in enumerate(zip(images[:nb_train_samples], labels[:nb_train_samples])):
         LOGGER.debug(f'Start training step {i + 1:03}/{nb_train_samples} ({i / nb_train_samples * 100:5.2f}%)')
         enough_spikes = False
 
@@ -219,6 +250,10 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
                 LOGGER.debug(
                     f'Not enough spikes ({sum_spikes}), retry with higher intensity level ({input_intensity})')
             else:
+                # Store spike activity
+                spike_activities[i, :] = current_spike_count_e
+                input_labels[i] = label
+
                 # Reset network
                 neurons_input.rates = 0 * units.Hz
                 net.run(resting_time)
@@ -226,8 +261,12 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
                 enough_spikes = True
 
-            if enough_spikes == True & len(count_activation_map) < 5*nb_excitator_neurons:
+            if enough_spikes == True & len(count_activation_map) < 5 * nb_excitator_neurons:
                 count_activation_map.append(current_spike_count_e)
+
+    labeled_neurons = chose_labeled_neurons(spike_activities, input_labels)
+
+    # ========================================= Plots ==========================================
 
     plt.subplot(211)
     plt.plot(evolution_moyenne_spike_e, label="exitateur")
@@ -242,11 +281,10 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     LOGGER.info(f'Training completed')
 
     plt.figure()
-    plt.plot(volt_mon_e.t/units.second, volt_mon_e.v[0])
-    plt.plot(volt_mon_i.t/units.second, volt_mon_i.v[0])
+    plt.plot(volt_mon_e.t / units.second, volt_mon_e.v[0])
+    plt.plot(volt_mon_i.t / units.second, volt_mon_i.v[0])
     plt.title('Potentiel neuron exc et inhib')
     plt.show()
-
 
     # Activation map graph
     plt.figure()
@@ -281,7 +319,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     plt.ylabel('Weights')
     plt.xlabel('Synapses index')
     plt.subplot(212)
-    plt.plot(mon_input.t/units.second, mon_input.w.T)
+    plt.plot(mon_input.t / units.second, mon_input.w.T)
     plt.xlabel('Time (s)')
     plt.ylabel('Weight')
     plt.tight_layout()
@@ -293,7 +331,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     plt.ylabel('Weights')
     plt.xlabel('Synapses index')
     plt.subplot(212)
-    plt.plot(mon_e_i.t/units.second, mon_e_i.w.T)
+    plt.plot(mon_e_i.t / units.second, mon_e_i.w.T)
     plt.xlabel('Time (s)')
     plt.ylabel('Weight')
     plt.tight_layout()
@@ -305,7 +343,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     plt.ylabel('Weights')
     plt.xlabel('Synapses index')
     plt.subplot(212)
-    plt.plot(mon_i_e.t/units.second, mon_i_e.w.T)
+    plt.plot(mon_i_e.t / units.second, mon_i_e.w.T)
     plt.xlabel('Time (s)')
     plt.ylabel('Weight')
     plt.tight_layout()
@@ -318,14 +356,12 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     # TODO disable learning
     net.store()  # If remove the also re enable previous_spike_count_e
 
+    nb_correct = 0
+
     neurons_input.rates = 0 * units.Hz  # Necessary?
     net.run(0 * units.second)  # Why?
 
-    # Array to store results
-    result_monitor = np.zeros((nb_test_samples, nb_excitator_neurons))
-    input_labels = np.zeros(nb_test_samples)
-
-    for i, (image, labels) in enumerate(
+    for i, (image, label) in enumerate(
             zip(images[60000:60000 + nb_test_samples], labels[60000:60000 + nb_test_samples])):
         LOGGER.debug(f'Start testing step {i + 1:03}/{nb_test_samples} ({i / nb_test_samples * 100:5.2f}%)')
         enough_spikes = False
@@ -354,18 +390,24 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
                 LOGGER.debug(
                     f'Not enough spikes ({sum_spikes}), retry with higher intensity level ({input_intensity})')
             else:
-                # Store results
-                result_monitor[i, :] = current_spike_count_e
-                input_labels[i] = labels
-
                 # Reset network
                 neurons_input.rates = 0 * units.Hz
                 net.run(resting_time)
                 input_intensity = start_input_intensity
 
+                inferred_label = infer_label(current_spike_count_e, labeled_neurons)
+
+                if inferred_label == int(label):
+                    nb_correct += 1
+                    LOGGER.debug(f'Correctly classified {label} - Current accuracy: {nb_correct / (i + 1) * 100:5.2f}%')
+                else:
+                    LOGGER.debug(f'Badly classified {label} (inferred {inferred_label}) '
+                                 f'- Current accuracy: {nb_correct / (i + 1) * 100:5.2f}%')
+
                 enough_spikes = True
 
     LOGGER.info(f'Testing completed')
+    LOGGER.info(f'Final accuracy on {nb_test_samples} images: {nb_correct / nb_test_samples * 100:.5}%')
 
 
 if __name__ == '__main__':
