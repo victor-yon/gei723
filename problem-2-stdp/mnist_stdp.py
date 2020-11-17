@@ -51,8 +51,8 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     # ================================== Simulation parameters =================================
     nb_input_neurons = len(images[0])
-    nb_excitator_neurons: int = 400  # a faire varier
-    nb_inhibitor_neurons: int = 400  # a faire varier
+    nb_excitator_neurons: int = 100  # a faire varier
+    nb_inhibitor_neurons: int = 100  # a faire varier
     single_example_time = 0.35 * units.second
     resting_time = 0.15 * units.second
     input_intensity = 2
@@ -155,6 +155,9 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     synapses_input_e.connect(True)  # All to all
     synapses_input_e.w = 'rand() * 0.3'
 
+    volt_mon_e = StateMonitor(neurons_e, 'v', record=[0, 1])
+    volt_mon_i = StateMonitor(neurons_i, 'v', record=[0, 1])
+
     mon_input = StateMonitor(synapses_input_e, 'w', record = [0, 1])
     mon_e_i = StateMonitor(synapses_e_i, 'w', record = [0, 1])
     mon_i_e = StateMonitor(synapses_i_e, 'w', record = [0, 1])
@@ -202,9 +205,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
             previous_spike_count_e = np.copy(spike_counters_e.count)
             previous_spike_count_i = np.copy(spike_counters_i.count)
             sum_spikes = np.sum(current_spike_count_e)
-            if enough_spikes == True & len(count_activation_map) < 5:
-                count_activation_map.append(current_spike_count_e)
-                #print(count_activation_map)
+
 
             # Check if enough spike triggered, if under the limit start again with the same image
             if sum_spikes < 5:
@@ -219,6 +220,11 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
                 input_intensity = start_input_intensity
                 enough_spikes = True
 
+            if enough_spikes == True & len(count_activation_map) < 5*nb_excitator_neurons:
+                count_activation_map.append(current_spike_count_e)
+                #print(count_activation_map)
+                print('allo')
+
     plt.subplot(211)
     plt.plot(evolution_moyenne_spike_e, label="exitateur")
     plt.plot(evolution_moyenne_spike_i, label="inhibiteur")
@@ -232,11 +238,18 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     LOGGER.info(f'Training is over')
 # =======
+    plt.figure()
+    plt.plot(volt_mon_e.t/units.second, volt_mon_e.v[0])
+    plt.plot(volt_mon_i.t/units.second, volt_mon_i.v[0])
+    plt.title('Potentiel neuron exc et inhib')
+    plt.show()
+
+
     # Activation map graph
     plt.figure()
-    plt.plot(count_activation_map)
+    plt.plot(range(len(current_spike_count_e)), count_activation_map[0])
     # plot chaque ligne de la matrice spike pour la carte d'activation
-    plt.title('Carte d''activation')
+    plt.title('Carte d'' activation')
     plt.show()
 
     # Courbes d'accord
@@ -260,6 +273,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     # plt.show()
 
     plt.subplot(211)
+    plt.title('Synapses input to exc')
     plt.plot(synapses_input_e.w, '.k')
     plt.ylabel('Weights')
     plt.xlabel('Synapses index')
@@ -271,6 +285,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     plt.show()
 
     plt.subplot(211)
+    plt.title('Synapses exc to inh')
     plt.plot(synapses_e_i.w, '.k')
     plt.ylabel('Weights')
     plt.xlabel('Synapses index')
@@ -282,6 +297,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     plt.show()
 
     plt.subplot(211)
+    plt.title('Synapses inh to exc')
     plt.plot(synapses_i_e.w, '.k')
     plt.ylabel('Weights')
     plt.xlabel('Synapses index')
