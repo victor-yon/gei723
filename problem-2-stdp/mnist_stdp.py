@@ -4,22 +4,42 @@ Code adapted from : https://github.com/zxzhijia/Brian2STDPMNIST
 """
 
 import logging
+import pickle
 import sys
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 from brian2 import prefs, units, NeuronGroup, Synapses, SpikeMonitor, PoissonGroup, Network, StateMonitor
 from sklearn import datasets
 
+from stopwatch import Stopwatch
 from util_plots import img_show
 
 LOGGER = logging.getLogger(__name__)
+DATA_DIR = './data'
 
 
 def load_data():
-    LOGGER.info('Loading MNIST database...')
-    images, labels = datasets.fetch_openml('mnist_784', version=1, return_X_y=True, data_home='./data')
-    LOGGER.info(f'MNIST database loaded: {len(images)} images of dimension {images[0].shape}')
+    Stopwatch.starting('load_data')
+
+    save_path = Path(DATA_DIR, 'mnist_784.p')
+
+    if save_path.is_file():
+        LOGGER.info(f'Loading MNIST database from local file ({save_path}) ...')
+        images, labels = pickle.load(open(save_path, 'rb'))
+    else:
+        LOGGER.info('Downloading MNIST database from distant server ...')
+        # Don't use cache because it's slow
+        images, labels = datasets.fetch_openml('mnist_784', version=1, return_X_y=True, cache=False)
+
+        # Store in file using pickle
+        LOGGER.debug(f'Saving MNIST database in local file ({save_path}) ...')
+        Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
+        pickle.dump((images, labels), open(save_path, 'wb'))
+
+    time_msg = Stopwatch.stopping('load_data')
+    LOGGER.info(f'MNIST database loaded: {len(images)} images of dimension {images[0].shape}. {time_msg}')
 
     # Show the first 9 images
     img_show(images[:9].reshape(9, 28, 28), 'Examples d\'images du jeu de données MNIST', labels[:9])
@@ -411,4 +431,4 @@ if __name__ == '__main__':
     LOGGER.setLevel(logging.DEBUG)
     LOGGER.info('Beginning of execution')
 
-    run(nb_train_samples=50, nb_test_samples=50)
+    run(nb_train_samples=20, nb_test_samples=20)
