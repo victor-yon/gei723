@@ -40,16 +40,14 @@ def normalize_weights(synapses_input_e):
     synapses_input_e.w = temp_conn[synapses_input_e.i, synapses_input_e.j]
 
 
-def chose_labeled_neurons(spike_activities, input_labels):
+def chose_labeled_neurons(spike_activities):
     """
     Chose the best neuron to recognise each label.
 
-    :param spike_activities: The spiking activity for each input, for each excitatory neuron.
-    :param input_labels: The label of each input corresponding to the recorded activity.
+    :param spike_activities:
     :return: A list a index of excitatory neuron that spike the most for each label.
     """
-    # TODO selectioner le neurone qui décharge le plus pour chaque label
-    return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    return np.argmax(spike_activities, axis=1)
 
 
 def infer_label(spike_activity, labeled_neurons):
@@ -61,8 +59,8 @@ def infer_label(spike_activity, labeled_neurons):
     :param labeled_neurons: The list of labeled neurons computed.
     :return: The best guess of label.
     """
-    # TODO Selectionner le bon label
-    return 0
+    spikes_interest = np.array([spike_activity[x] for x in labeled_neurons])
+    return np.argmax(spikes_interest)
 
 
 def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
@@ -210,8 +208,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     evolution_moyenne_matrice_poids = []
 
     # Array to store spike activity for each excitatory neurons
-    spike_activities = np.zeros((nb_test_samples, nb_excitator_neurons))
-    input_labels = np.zeros(nb_test_samples)
+    spike_per_label = np.zeros((10, nb_excitator_neurons))
 
     neurons_input.rates = 0 * units.Hz  # Necessary?
     net.run(0 * units.second)  # Why?
@@ -251,8 +248,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
                     f'Not enough spikes ({sum_spikes}), retry with higher intensity level ({input_intensity})')
             else:
                 # Store spike activity
-                spike_activities[i, :] = current_spike_count_e
-                input_labels[i] = label
+                spike_per_label[int(label)] += current_spike_count_e
 
                 # Reset network
                 neurons_input.rates = 0 * units.Hz
@@ -264,7 +260,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
             if enough_spikes == True & len(count_activation_map) < 5 * nb_excitator_neurons:
                 count_activation_map.append(current_spike_count_e)
 
-    labeled_neurons = chose_labeled_neurons(spike_activities, input_labels)
+    labeled_neurons = chose_labeled_neurons(spike_per_label)
 
     # ========================================= Plots ==========================================
 
