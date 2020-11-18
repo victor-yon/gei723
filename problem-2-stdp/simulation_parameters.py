@@ -22,6 +22,8 @@ class SimulationParameters:
 
     input_intensity: int = 2
 
+    normalization: bool = True
+
     offset: Quantity = 20.0 * units.mV
     v_rest_e: Quantity = -65 * units.mV
     v_rest_i: Quantity = -60 * units.mV

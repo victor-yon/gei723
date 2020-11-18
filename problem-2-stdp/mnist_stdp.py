@@ -235,7 +235,10 @@ def train(net, images, labels, parameters):
             enough_spikes = False
 
             while not enough_spikes:
-                normalize_weights(net['synapses_input_e'])
+                # Input => Excitator weight normalization
+                if parameters.normalization:
+                    normalize_weights(net['synapses_input_e'])
+
                 average_weights_evolution.append(np.average(net['synapses_input_e'].w))
 
                 input_rates = image.reshape(len(net['neurons_input'])) / 8 * current_input_intensity
