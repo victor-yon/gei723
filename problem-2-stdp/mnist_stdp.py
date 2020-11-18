@@ -349,10 +349,6 @@ def test(net, images, labels, labeled_neurons, parameters):
 
 
 def run(parameters: SimulationParameters):
-    if parameters.nb_train_samples > 60000:
-        raise ValueError('The number of train sample can\'t be more than 60000')
-    if parameters.nb_test_samples > 10000:
-        raise ValueError('The number of test sample can\'t be more than 10000')
 
     LOGGER.info('Beginning of execution')
 

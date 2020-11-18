@@ -41,6 +41,15 @@ class SimulationParameters:
     tc_theta: Quantity = 1e7 * units.ms
     theta_plus: Quantity = 0.05 * units.mV
 
+    def __post_init__(self):
+        """
+        Validate parameters.
+        """
+        if self.nb_train_samples > 60000:
+            raise ValueError('The number of train sample can\'t be more than 60000')
+        if self.nb_test_samples > 10000:
+            raise ValueError('The number of test sample can\'t be more than 10000')
+
     def get_namespace(self):
         """
         :return: A dictionary object that can be use by brian as namespace
