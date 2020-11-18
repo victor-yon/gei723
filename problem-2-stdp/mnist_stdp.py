@@ -12,6 +12,7 @@ import numpy as np
 from brian2 import prefs, units, NeuronGroup, Synapses, SpikeMonitor, PoissonGroup, Network, StateMonitor
 from sklearn import datasets
 
+from simulation_parameters import SimulationParameters
 from stopwatch import Stopwatch
 from util_plots import img_show
 
@@ -82,12 +83,12 @@ def infer_label(spike_activity, labeled_neurons):
     return np.argmax(spikes_interest)
 
 
-def train(net, images, labels, exposition_time, resting_time, input_intensity):
+def train(net, images, labels, parameters):
     nb_train_samples = len(images)
     LOGGER.info(f'Start training on {len(images)} images...')
     Stopwatch.starting('training')
 
-    start_input_intensity = input_intensity
+    current_input_intensity = parameters.input_intensity
 
     previous_spike_count_e = np.zeros(len(net['neurons_i']))
     previous_spike_count_i = np.zeros(len(net['neurons_i']))
@@ -101,7 +102,7 @@ def train(net, images, labels, exposition_time, resting_time, input_intensity):
     evolution_moyenne_matrice_poids = []
 
     net['neurons_input'].rates = 0 * units.Hz  # Necessary?
-    net.run(0 * units.second)  # Why?
+    net.run(0 * units.second, namespace=parameters.get_namespace())  # Why?
 
     # TODO add epoch
     for i, (image, label) in enumerate(zip(images, labels)):
@@ -112,11 +113,11 @@ def train(net, images, labels, exposition_time, resting_time, input_intensity):
             normalize_weights(net['synapses_input_e'])
             evolution_moyenne_matrice_poids.append(np.average(net['synapses_input_e'].w))
 
-            input_rates = image.reshape(len(net['neurons_input'])) / 8 * input_intensity
+            input_rates = image.reshape(len(net['neurons_input'])) / 8 * current_input_intensity
             net['neurons_input'].rates = input_rates * units.Hz
 
             # Run the network
-            net.run(exposition_time)
+            net.run(parameters.exposition_time, namespace=parameters.get_namespace())
 
             current_spike_count_e = net['spike_counters_e'].count - previous_spike_count_e
             current_spike_count_i = net['spike_counters_i'].count - previous_spike_count_i
@@ -134,19 +135,19 @@ def train(net, images, labels, exposition_time, resting_time, input_intensity):
 
             # Check if enough spike triggered, if under the limit start again with the same image
             if current_sum_spikes_e < 5:
-                input_intensity += 1
+                current_input_intensity += 1
                 net['neurons_input'].rates = 0 * units.Hz
-                net.run(resting_time)
+                net.run(parameters.resting_time, namespace=parameters.get_namespace())
                 LOGGER.debug(
-                    f'Not enough spikes ({current_sum_spikes_e}), retry with higher intensity level ({input_intensity})')
+                    f'Not enough spikes ({current_sum_spikes_e}), retry with higher intensity level ({current_input_intensity})')
             else:
                 # Store spike activity
                 spike_per_label[int(label)] += current_spike_count_e
 
                 # Reset network
                 net['neurons_input'].rates = 0 * units.Hz
-                net.run(resting_time)
-                input_intensity = start_input_intensity
+                net.run(parameters.resting_time, namespace=parameters.get_namespace())
+                current_input_intensity = parameters.input_intensity
 
                 enough_spikes = True
 
@@ -159,10 +160,10 @@ def train(net, images, labels, exposition_time, resting_time, input_intensity):
     return spike_per_label, average_spike_evolution_e, average_spike_evolution_i
 
 
-def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
-    if nb_train_samples > 60000:
+def run(parameters: SimulationParameters):
+    if parameters.nb_train_samples > 60000:
         raise ValueError('The number of train sample can\'t be more than 60000')
-    if nb_test_samples > 10000:
+    if parameters.nb_test_samples > 10000:
         raise ValueError('The number of test sample can\'t be more than 10000')
 
     LOGGER.info('Beginning of execution')
@@ -178,33 +179,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     # ================================== Simulation parameters =================================
     nb_input_neurons = len(images[0])
-    nb_excitator_neurons: int = 400  # a faire varier
-    nb_inhibitor_neurons: int = 400  # a faire varier
-    exposition_time = 0.35 * units.second
-    resting_time = 0.15 * units.second
-    input_intensity = 2
-    start_input_intensity = input_intensity
     COURBES = 10
-
-    offset = 20.0 * units.mV
-    v_rest_e = -65. * units.mV
-    v_rest_i = -60. * units.mV
-    v_reset_e = -65. * units.mV
-    v_reset_i = -45 * units.mV
-    v_thresh_e = -52 * units.mV  # Will also include theta, offset and timer
-    v_thresh_i = -40 * units.mV
-    refrac_e = 5. * units.ms
-    refrac_i = 2. * units.ms
-
-    tc_pre = 20 * units.ms
-    tc_post_1 = 20 * units.ms
-    tc_post_2 = 40 * units.ms
-    nu_pre = 0.0001  # learning rate à faire varier
-    nu_post = 0.01  # learning rate à faire varier
-    wmax = 1.0  # à faire varier
-
-    tc_theta = 1e7 * units.ms
-    theta_plus = 0.05 * units.mV
 
     neuron_eqs_e = '''
         dv/dt  = ((v_rest_e - v) + (I_synE+I_synI) / nS) / (100*ms) : volt (unless refractory)
@@ -254,24 +229,26 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     net = Network()
 
     # ========================= Neurons excitator ==========================
-    neurons_e = NeuronGroup(nb_excitator_neurons, neuron_eqs_e,
+    neurons_e = NeuronGroup(parameters.nb_excitator_neurons,
+                            neuron_eqs_e,
                             threshold='(v > (theta - offset + v_thresh_e)) and (timer > refrac_e)',
-                            refractory=refrac_e,
+                            refractory=parameters.refrac_e,
                             reset='v = v_reset_e; theta += theta_plus; timer = 0*ms',
                             method='euler',
                             name='neurons_e')
-    neurons_e.v = v_rest_e - 40. * units.mV
-    neurons_e.theta = np.ones(nb_excitator_neurons) * 20.0 * units.mV
+    neurons_e.v = parameters.v_rest_e - 40. * units.mV
+    neurons_e.theta = np.ones(parameters.nb_excitator_neurons) * 20.0 * units.mV
     net.add(neurons_e)
 
     # ========================= Neurons inhibitor ==========================
-    neurons_i = NeuronGroup(nb_inhibitor_neurons, neuron_eqs_i,
+    neurons_i = NeuronGroup(parameters.nb_inhibitor_neurons,
+                            neuron_eqs_i,
                             threshold='v > v_thresh_i',
-                            refractory=refrac_i,
+                            refractory=parameters.refrac_i,
                             reset='v = v_reset_i',
                             method='euler',
                             name='neurons_i')
-    neurons_i.v = v_rest_i - 40. * units.mV
+    neurons_i.v = parameters.v_rest_i - 40. * units.mV
     net.add(neurons_i)
 
     # ======================= Excitator => Inhibitor =======================
@@ -291,13 +268,15 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     net.add(neurons_input)
 
     # ========================= Input => Excitator =========================
-    synapses_input_e = Synapses(neurons_input, neurons_e, model=eqs_stdp, on_pre=eqs_stdp_pre, on_post=eqs_stdp_post)
+    synapses_input_e = Synapses(neurons_input, neurons_e, model=eqs_stdp, on_pre=eqs_stdp_pre, on_post=eqs_stdp_post,
+                                name='synapses_input_e')
     synapses_input_e.connect(True)  # All to all
     synapses_input_e.w = 'rand() * 0.3'
     min_delay = 0 * units.ms
     max_delay = 10 * units.ms
     delta_delay = max_delay - min_delay
     synapses_input_e.delay = 'min_delay + rand() * delta_delay'
+    net.add(synapses_input_e)
 
     # ============================== Monitors ==============================
 
@@ -316,20 +295,21 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     mon_e_i = StateMonitor(synapses_e_i, 'w', record=[0, 1], name='mon_e_i')
     mon_i_e = StateMonitor(synapses_i_e, 'w', record=[0, 1], name='mon_i_e')
 
-    # Feed the network with namespace
-    net.before_run({})
+    # Feed the network with parameter variables
+    net._clocks = []  # Fix a bug from brian 2.4.2
+    net.before_run(parameters.get_namespace())
 
     time_msg = Stopwatch.stopping('network_creation')
     LOGGER.info(f'Network created. {time_msg}.')
 
     # ======================================== Training ========================================
 
+    train_images = images[:parameters.nb_train_samples]
+    train_labels = labels[:parameters.nb_train_samples]
     spike_per_label, average_spike_evolution_e, average_spike_evolution_i = train(net,
-                                                                                  images[:nb_train_samples],
-                                                                                  labels[:nb_train_samples],
-                                                                                  exposition_time,
-                                                                                  resting_time,
-                                                                                  input_intensity)
+                                                                                  train_images,
+                                                                                  train_labels,
+                                                                                  parameters)
 
     labeled_neurons = chose_labeled_neurons(spike_per_label)
 
@@ -374,7 +354,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     fig = plt.figure()
     plt.hist(synapses_input_e.w, bins=10, edgecolor='black')
     bins = range(1, 11)
-    plt.title(f"répartition des poids selon leur valeur après {nb_train_samples} itérations")
+    plt.title(f"répartition des poids selon leur valeur après {parameters.nb_train_samples} itérations")
     plt.show()
 
     # Average of weights with the number of samples
@@ -424,8 +404,14 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     # ======================================== Testing =========================================
 
+    test_images = images[60000:60000 + parameters.nb_test_samples]
+    test_labels = labels[60000:60000 + parameters.nb_test_samples]
+
+    nb_test_samples = len(test_images)
     Stopwatch.starting('testing')
     LOGGER.info(f'Start testing on {nb_test_samples} images...')
+
+    current_input_intensity = parameters.input_intensity
 
     # TODO disable learning
     net.store()  # If remove the also re enable previous_spike_count_e
@@ -434,10 +420,9 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     nb_correct = 0
 
     neurons_input.rates = 0 * units.Hz  # Necessary?
-    net.run(0 * units.second)  # Why?
+    net.run(0 * units.second, namespace=parameters.get_namespace())  # Why?
 
-    for i, (image, label) in enumerate(
-            zip(images[60000:60000 + nb_test_samples], labels[60000:60000 + nb_test_samples])):
+    for i, (image, label) in enumerate(zip(test_images, test_labels)):
         LOGGER.debug(f'Start testing step {i + 1:03}/{nb_test_samples} ({i / nb_test_samples * 100:5.2f}%)')
         enough_spikes = False
 
@@ -445,11 +430,11 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
         net.restore()
 
         while not enough_spikes:
-            input_rates = image.reshape((nb_input_neurons)) / 8 * input_intensity
+            input_rates = image.reshape((nb_input_neurons)) / 8 * current_input_intensity
             neurons_input.rates = input_rates * units.Hz
 
             # Run the network
-            net.run(exposition_time)
+            net.run(parameters.exposition_time, namespace=parameters.get_namespace())
 
             current_spike_count_e = spike_counters_e.count - previous_spike_count_e
             # Since the network is reset everytime, the previous_spike_count_e can stay the same
@@ -459,16 +444,16 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
             # Check if enough spike triggered, if under the limit start again with the same image
             if current_sum_spikes_e < 5:
-                input_intensity += 1
+                current_input_intensity += 1
                 neurons_input.rates = 0 * units.Hz
-                net.run(resting_time)
+                net.run(parameters.resting_time, namespace=parameters.get_namespace())
                 LOGGER.debug(
-                    f'Not enough spikes ({current_sum_spikes_e}), retry with higher intensity level ({input_intensity})')
+                    f'Not enough spikes ({current_sum_spikes_e}), retry with higher intensity level ({current_input_intensity})')
             else:
                 # Reset network
                 neurons_input.rates = 0 * units.Hz
-                net.run(resting_time)
-                input_intensity = start_input_intensity
+                net.run(parameters.resting_time, namespace=parameters.get_namespace())
+                current_input_intensity = parameters.input_intensity
 
                 inferred_label = infer_label(current_spike_count_e, labeled_neurons)
 
