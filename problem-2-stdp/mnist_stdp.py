@@ -11,7 +11,7 @@ import numpy as np
 from brian2 import prefs, units, NeuronGroup, Synapses, SpikeMonitor, PoissonGroup, Network, StateMonitor
 from sklearn import datasets
 
-from mnist_stdp_plots import plot_post_training
+from mnist_stdp_plots import plot_post_training, COURBES
 from simulation_parameters import SimulationParameters
 from stopwatch import Stopwatch
 from util_plots import img_show
@@ -219,7 +219,7 @@ def train(net, images, labels, parameters):
 
     average_spike_evolution_e = []
     average_spike_evolution_i = []
-    evolution_moyenne_matrice_poids = []
+    average_weights_evolution = []
 
     net['neurons_input'].rates = 0 * units.Hz  # Necessary?
     net.run(0 * units.second, namespace=parameters.get_namespace())  # Why?
@@ -231,7 +231,7 @@ def train(net, images, labels, parameters):
 
         while not enough_spikes:
             normalize_weights(net['synapses_input_e'])
-            evolution_moyenne_matrice_poids.append(np.average(net['synapses_input_e'].w))
+            average_weights_evolution.append(np.average(net['synapses_input_e'].w))
 
             input_rates = image.reshape(len(net['neurons_input'])) / 8 * current_input_intensity
             net['neurons_input'].rates = input_rates * units.Hz
@@ -272,13 +272,13 @@ def train(net, images, labels, parameters):
 
                 enough_spikes = True
 
-            # if enough_spikes is True and np.size(count_activation_map, axis=0) < 5:
-            #     count_activation_map = np.concatenate((count_activation_map, current_spike_count_e))
+            if enough_spikes is True and np.size(count_activation_map, axis=0) < COURBES:
+                count_activation_map = np.concatenate((count_activation_map, current_spike_count_e.reshape(1, -1)))
 
     time_msg = Stopwatch.stopping('training', len(images))
     LOGGER.info(f'Training completed. {time_msg}.')
 
-    return spike_per_label, average_spike_evolution_e, average_spike_evolution_i
+    return spike_per_label, average_spike_evolution_e, average_spike_evolution_i, count_activation_map, average_weights_evolution
 
 
 def test(net, images, labels, labeled_neurons, parameters):
