@@ -12,7 +12,7 @@ from brian2 import prefs, units, NeuronGroup, Synapses, SpikeMonitor, PoissonGro
 from sklearn import datasets
 
 from mnist_stdp_out import init_out_directory, result_out
-from mnist_stdp_plots import plot_post_training, COURBES, img_show
+from mnist_stdp_plots import plot_post_training, COURBES, img_show, plot_post_testing
 from simulation_parameters import SimulationParameters
 from stopwatch import Stopwatch
 
@@ -309,6 +309,7 @@ def test(net, images, labels, labeled_neurons, parameters):
 
     previous_spike_count_e = np.copy(net['spike_counters_e'].count)
     nb_correct = 0
+    y_pred = np.zeros(parameters.nb_test_samples)
 
     net['neurons_input'].rates = 0 * units.Hz  # Necessary?
     net.run(0 * units.second, namespace=parameters.get_namespace())  # Why?
@@ -349,6 +350,7 @@ def test(net, images, labels, labeled_neurons, parameters):
                 current_input_intensity = parameters.input_intensity
 
                 inferred_label = infer_label(current_spike_count_e, labeled_neurons)
+                y_pred[i] = inferred_label
 
                 if inferred_label == int(label):
                     nb_correct += 1
@@ -361,7 +363,11 @@ def test(net, images, labels, labeled_neurons, parameters):
 
     time_msg = Stopwatch.stopping('testing', nb_test_samples)
     LOGGER.info(f'Testing completed. {time_msg}.')
+    y_true = np.zeros(parameters.nb_test_samples)
+    for i in range(len(y_true)):
+        y_true[i] = labels[i]
 
+    y_pred = np.array(y_pred)
     LOGGER.info(f'Final accuracy on {nb_test_samples} images: {nb_correct / nb_test_samples * 100:.5}%')
 
     return nb_correct / nb_test_samples

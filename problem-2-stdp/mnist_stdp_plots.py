@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List
 
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
 import numpy as np
 from brian2 import units
 
@@ -14,6 +15,28 @@ LOGGER = logging.getLogger('mnist_stdp')
 
 COURBES = 10  # Nombre de courbes d'activation que l'on souhaite
 WEIGHTS_TO_RECORD = [4000, 60000]
+
+def plot_post_testing(y_pred, y_true, parameters):
+    # Matrice Confusion
+
+    save_dir = Path(OUT_DIR, parameters.run_name)
+
+    figure, ax = plt.subplots()
+    max_val = 10
+    cf = confusion_matrix(y_true, y_pred, labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    print(cf)
+    plt.ylabel('prédictions')
+    plt.xlabel('étiquettes')
+    plt.title('Matrice de confusion')
+    ax.matshow(cf, cmap=plt.cm.Blues)
+
+    for i in range(max_val):
+        for j in range(max_val):
+            c = cf[j, i]
+            ax.text(i, j, str(c), va='center', ha='center')
+    plt.tight_layout()
+    plt.savefig(save_dir / 'confusion_mat.png')
+    plt.show()
 
 
 def plot_post_training(net, train_stats, parameters):
@@ -65,7 +88,7 @@ def plot_post_training(net, train_stats, parameters):
     # Courbes d'accord
     plt.figure()
     for i in range(COURBES):
-        plt.plot(range(10), spike_per_label_e[:, i * 30], label=f'neurone {i + 1}')
+        plt.plot(range(10), spike_per_label_e[:, int(i *parameters.nb_excitator_neurons/10)], label=f'neurone {int(i *parameters.nb_excitator_neurons/10)}')
     plt.title(f"Échantillon des courbes d\'accord de {COURBES} neurones")
     plt.xlabel('valeur de l\'étiquette')
     plt.ylabel('nombre de déchange')
