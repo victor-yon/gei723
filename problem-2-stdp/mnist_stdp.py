@@ -42,7 +42,7 @@ def load_data():
     LOGGER.info(f'MNIST database loaded: {len(images)} images of dimension {images[0].shape}. {time_msg}.')
 
     # Show the first 9 images
-    img_show(images[:9].reshape(9, 28, 28), 'Examples d\'images du jeu de données MNIST', labels[:9])
+    img_show(images[:9].reshape(9, 28, 28), 'Exemples d\'images du jeu de données MNIST', labels[:9])
 
     return images, labels
 
