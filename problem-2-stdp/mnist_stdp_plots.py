@@ -63,7 +63,7 @@ def plot_post_training(net, train_stats, parameters):
     # Courbes d'accord
     plt.figure()
     for i in range(COURBES):
-        plt.plot(range(10), spike_per_label[:, int(i *parameters.nb_excitator_neurons/10)], label=f'neurone {i + 1}')
+        plt.plot(range(10), spike_per_label[:, int(i *parameters.nb_excitator_neurons/10)], label=f'neurone {int(i *parameters.nb_excitator_neurons/10)}')
     plt.title(f"Échantillon des courbes d\'accord de {COURBES} neurones")
     plt.xlabel('valeur de l\'étiquette')
     plt.ylabel('nombre de déchange')
