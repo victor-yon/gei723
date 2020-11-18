@@ -2,8 +2,8 @@ from brian2 import *
 
 N = 1000
 taum = 10*ms
-taupre = 15*ms
-taupost = 50*ms #taupre
+taupre = 30*ms
+taupost = 40*ms #taupre
 Ee = 0*mV
 vt = -54*mV
 vr = -60*mV
@@ -11,14 +11,36 @@ El = -74*mV
 taue = 5*ms
 F = 63*Hz  #15Hz, 6Hz et 10 Hz
 gmax = .01
-dApre = 12
-dApost = -4  #-dApre * taupre / taupost * 1.05
+dApre = -12
+dApost = 10  #-dApre * taupre / taupost * 1.05
 dApost *= gmax
 dApre *= gmax
 
 eqs_neurons = '''
 dv/dt = (ge * (Ee-v) + El - v) / taum : volt
 dge/dt = -ge / taue : 1
+'''
+
+# Cette variable nous permet de réinitialiser les instants de décharge après que la STDP s'opère dans la synapse
+# On va utiliser la condition int(t_spike_a > t0) pour évaluer si oui ou non on opère le changement de poids
+t0 = 0*second
+
+eqs_stdp = '''
+    w : 1
+    t_spike_a : second 
+    t_spike_b : second
+'''
+# On peut avoir accès au temps avec la variable t dans la syntaxe des équations de Brian2
+on_pre = '''
+    ge += w
+    t_spike_a = t
+    w = w + int(t_spike_b > t0) * dApost * exp((t_spike_b - t_spike_a)/taupost)      # le cas Delta t < 0
+    t_spike_b = t0
+'''
+on_post = '''
+    t_spike_b = t
+    w = w + int(t_spike_a > t0) *0.025 + int(t_spike_a > t0) * dApre * exp(-(t_spike_b - t_spike_a)/taupre)    # le cas Delta t > 0
+    t_spike_a = t0
 '''
 
 input = PoissonGroup(N, rates=F)

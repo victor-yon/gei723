@@ -1,26 +1,22 @@
 from brian2 import *
-import numpy as np
-
 
 N = 1000
 taum = 10*ms
-taupre = 10*ms #200*ms
-taupost = 200*ms #taupre
+taupre1 = 10*ms
+taupre2 = 30*ms
+taupost = 40*ms #taupre
 Ee = 0*mV
 vt = -54*mV
 vr = -60*mV
 El = -74*mV
 taue = 5*ms
-F = 15*Hz
+F = 63*Hz  #15Hz, 6Hz et 10 Hz
 gmax = .01
-dApre = 0.01
-dApost = -0.5 #-dApre * taupre / taupost #* 1.05
-dApost *= gmax
-dApre *= gmax
-Point = np.array([ 500, 500, 500 ,500 , 500, 100, 75, 7, 6, 0.6, 0.05,0.05, 0.05, 0.05, 0.05, 0, -0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.071, -0.072, -0.073, -0.074, -0.075, -0.072, -0.07, -0.065, -0.06,  -0.05, -0.045, -0.04, -0.035, -0.03, -0.02, -0.01, -0.005 -0.0015, -0.0012, -0.001, -0.00050, -0.0005 ,0])*100
-x = np.array([-3000,-2000,-1000,-900,-800,-750,-500,-400, -250, -150, 0, 1, 2, 3, 6,12, 15, 17, 20, 22, 25, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50,55, 60, 65, 70, 75, 80, 90, 100,125, 150, 175, 1000])
-z = np.polyfit(x, Point,15)
-p = np.poly1d(z)
+dApre1 = 0.12
+dApre2 = -0.06
+dApost = -0.06  #-dApre * taupre / taupost * 1.05
+#dApost *= gmax
+#dApre *= gmax
 
 eqs_neurons = '''
 dv/dt = (ge * (Ee-v) + El - v) / taum : volt
@@ -40,15 +36,14 @@ eqs_stdp = '''
 on_pre = '''
     ge += w
     t_spike_a = t
-    w =  int(t_spike_b > t0) * dApost * exp((t_spike_b - t_spike_a)/taupost)      # le cas Delta t < 0
+    w = w + int(t_spike_b > t0) * dApost * exp((t_spike_b - t_spike_a)/taupost)      # le cas Delta t < 0
     t_spike_b = t0
 '''
 on_post = '''
     t_spike_b = t
-    w = w + int((t_spike_b - t_spike_a) < 20 )*int(t_spike_a > t0)*dApre * exp(-(t_spike_b - t_spike_a)/taupre) + int(20<= (t_spike_b - t_spike_a ))*int((t_spike_b - t_spike_a )<= 50)*nt(t_spike_a > t0)*p(t_spike_b - t_spike_a)
+    w = w + int(t_spike_a > t0) * dApre1 * exp(-(t_spike_b - t_spike_a)/taupre1) + int(t_spike_a > t0) * dApre2 * exp(-(t_spike_b - t_spike_a)/taupre2)    # le cas Delta t > 0
     t_spike_a = t0
 '''
-
 
 input = PoissonGroup(N, rates=F)
 neurons = NeuronGroup(1, eqs_neurons, threshold='v>vt', reset='v = vr',
@@ -61,10 +56,9 @@ S.w = 'rand() * gmax'
 mon = StateMonitor(S, 'w', record=[0, 1])
 s_mon = SpikeMonitor(input)
 
-
-
-
 run(100*second, report='text')
+
+suptitle('Fréquence de {} Hz'.format(F), fontsize=20)
 
 subplot(311)
 plot(S.w / gmax, '.k')
@@ -78,9 +72,6 @@ plot(mon.t/second, mon.w.T/gmax)
 xlabel('Time (s)')
 ylabel('Weight / gmax')
 tight_layout()
+
+
 show()
-
-##[Trouver l'approximation polynomial]
-
-z = np.polyfit(L, Cor, 10)
-#    p = np.poly1d(z)
