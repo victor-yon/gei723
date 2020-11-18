@@ -18,6 +18,7 @@ from util_plots import img_show
 
 LOGGER = logging.getLogger('mnist_stdp')
 DATA_DIR = './data'
+INFO_FREQUENCY = 50
 
 
 def load_data():
@@ -226,8 +227,10 @@ def train(net, images, labels, parameters):
 
     for epoch in range(parameters.nb_epoch):
         LOGGER.info(f'Start epoch {epoch + 1}/{parameters.nb_epoch}')
+
         for i, (image, label) in enumerate(zip(images, labels)):
-            LOGGER.debug(f'Start training step {i + 1:03}/{nb_train_samples} ({i / nb_train_samples * 100:5.2f}%)')
+            LOGGER.log(logging.INFO if i % INFO_FREQUENCY == 0 else logging.DEBUG,
+                       f'Start training step {i + 1:03}/{nb_train_samples} ({i / nb_train_samples * 100:5.2f}%)')
             enough_spikes = False
 
             while not enough_spikes:
@@ -300,7 +303,8 @@ def test(net, images, labels, labeled_neurons, parameters):
     net.run(0 * units.second, namespace=parameters.get_namespace())  # Why?
 
     for i, (image, label) in enumerate(zip(images, labels)):
-        LOGGER.debug(f'Start testing step {i + 1:03}/{nb_test_samples} ({i / nb_test_samples * 100:5.2f}%)')
+        LOGGER.log(logging.INFO if i % INFO_FREQUENCY == 0 else logging.DEBUG,
+                   f'Start testing step {i + 1:03}/{nb_test_samples} ({i / nb_test_samples * 100:5.2f}%)')
         enough_spikes = False
 
         # Restore the network everytime because we don't disable the learning
