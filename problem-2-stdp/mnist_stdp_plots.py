@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
 import numpy as np
 from brian2 import units
 
@@ -12,6 +13,31 @@ LOGGER = logging.getLogger('mnist_stdp')
 
 COURBES = 10  # Nombre de courbes d'activation que l'on souhaite
 WEIGHTS_TO_RECORD = [4000, 60000]
+
+def plot_post_testing(y_pred, y_true, parameters):
+    # Matrice Confusion
+
+    save_dir = Path(OUT_DIR, parameters.run_name)
+
+    figure, ax = plt.subplots()
+    max_val = 10
+    # y_true = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    # y_pred = [1, 1, 2, 3, 5, 5, 6, 7, 8, 8]
+
+    cf = confusion_matrix(y_true, y_pred, labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    print(cf)
+    plt.ylabel('prédictions')
+    plt.xlabel('étiquettes')
+    plt.title('Matrice de confusion')
+    ax.matshow(cf, cmap=plt.cm.Blues)
+
+    for i in range(max_val):
+        for j in range(max_val):
+            c = cf[j, i]
+            ax.text(i, j, str(c), va='center', ha='center')
+    plt.tight_layout()
+    plt.savefig(save_dir / 'confusion_mat.png')
+    plt.show()
 
 
 def plot_post_training(net, train_stats, parameters):
@@ -101,6 +127,9 @@ def plot_post_training(net, train_stats, parameters):
     plt.legend(loc='upper center', bbox_to_anchor=[0.85, 0.90], prop={'size': 6})
     plt.savefig(save_dir / 'weights_evolution.png')
     plt.show()
+
+
+
 
     time_msg = Stopwatch.stopping('plotting')
     LOGGER.info(f'Plotting completed. {time_msg}.')

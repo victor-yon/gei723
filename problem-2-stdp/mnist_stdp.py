@@ -12,7 +12,7 @@ from brian2 import prefs, units, NeuronGroup, Synapses, SpikeMonitor, PoissonGro
 from sklearn import datasets
 
 from mnist_stdp_out import init_out_directory, result_out
-from mnist_stdp_plots import plot_post_training, COURBES
+from mnist_stdp_plots import plot_post_training, COURBES, plot_post_testing
 from simulation_parameters import SimulationParameters
 from stopwatch import Stopwatch
 from util_plots import img_show
@@ -176,7 +176,7 @@ def build_network(input_size, parameters):
 
     synapses_input_e = Synapses(neurons_input, neurons_e, model=eqs_stdp, on_pre=eqs_stdp_pre, on_post=eqs_stdp_post,
                                 name='synapses_input_e')
-    synapses_input_e.connect(True)  # All to all
+    synapses_input_e.connect(True, p=0.8)  # All to all
     synapses_input_e.w = 'rand() * 0.3'
     min_delay = 0 * units.ms
     max_delay = 10 * units.ms
@@ -299,6 +299,7 @@ def test(net, images, labels, labeled_neurons, parameters):
 
     previous_spike_count_e = np.copy(net['spike_counters_e'].count)
     nb_correct = 0
+    y_pred = np.zeros(parameters.nb_test_samples)
 
     net['neurons_input'].rates = 0 * units.Hz  # Necessary?
     net.run(0 * units.second, namespace=parameters.get_namespace())  # Why?
@@ -339,6 +340,7 @@ def test(net, images, labels, labeled_neurons, parameters):
                 current_input_intensity = parameters.input_intensity
 
                 inferred_label = infer_label(current_spike_count_e, labeled_neurons)
+                y_pred[i] = inferred_label
 
                 if inferred_label == int(label):
                     nb_correct += 1
@@ -351,6 +353,19 @@ def test(net, images, labels, labeled_neurons, parameters):
 
     time_msg = Stopwatch.stopping('testing', nb_test_samples)
     LOGGER.info(f'Testing completed. {time_msg}.')
+    y_true = np.zeros(parameters.nb_test_samples)
+    print
+    for i in range(len(y_true)):
+        y_true[i] = labels[i]
+
+    y_pred = np.array(y_pred)
+    # print(np.shape(y_pred))
+    print(type(y_pred))
+    print(y_pred)
+    print(y_true)
+
+    # print(np.shape(labels[60000:60000+parameters.nb_test_samples]))
+    plot_post_testing(y_pred, y_true, parameters)
 
     LOGGER.info(f'Final accuracy on {nb_test_samples} images: {nb_correct / nb_test_samples * 100:.5}%')
 
@@ -372,6 +387,8 @@ def run(parameters: SimulationParameters):
 
     # Load MNIST dataset
     images, labels = load_data()
+    print(labels)
+    print(np.shape(labels))
 
     # ===================================== Create Network =====================================
 
@@ -410,7 +427,7 @@ def run(parameters: SimulationParameters):
 
     test_images = images[60000:60000 + parameters.nb_test_samples]
     test_labels = labels[60000:60000 + parameters.nb_test_samples]
-
+    print(test_labels)
     # Start the training loop
     accuracy = test(net, test_images, test_labels, labeled_neurons, parameters)
 
