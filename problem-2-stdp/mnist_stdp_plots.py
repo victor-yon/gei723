@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import List
 
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
 import numpy as np
 from brian2 import units
+from sklearn.metrics import confusion_matrix
 
 from mnist_stdp_out import OUT_DIR
 from stopwatch import Stopwatch
@@ -24,7 +24,6 @@ def plot_post_testing(y_pred, y_true, parameters):
     figure, ax = plt.subplots()
     max_val = 10
     cf = confusion_matrix(y_true, y_pred, labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    print(cf)
     plt.ylabel('prédictions')
     plt.xlabel('étiquettes')
     plt.title('Matrice de confusion')

@@ -368,6 +368,8 @@ def test(net, images, labels, labeled_neurons, parameters):
         y_true[i] = labels[i]
 
     y_pred = np.array(y_pred)
+    # TODO move plot_post_testing in run()
+    plot_post_testing(y_pred, y_true, parameters)
     LOGGER.info(f'Final accuracy on {nb_test_samples} images: {nb_correct / nb_test_samples * 100:.5}%')
 
     return nb_correct / nb_test_samples
