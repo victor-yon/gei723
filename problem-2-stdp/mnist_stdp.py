@@ -224,61 +224,63 @@ def train(net, images, labels, parameters):
     net['neurons_input'].rates = 0 * units.Hz  # Necessary?
     net.run(0 * units.second, namespace=parameters.get_namespace())  # Why?
 
-    # TODO add epoch
-    for i, (image, label) in enumerate(zip(images, labels)):
-        LOGGER.debug(f'Start training step {i + 1:03}/{nb_train_samples} ({i / nb_train_samples * 100:5.2f}%)')
-        enough_spikes = False
+    for epoch in range(parameters.nb_epoch):
+        LOGGER.info(f'Start epoch {epoch + 1}/{parameters.nb_epoch}')
+        for i, (image, label) in enumerate(zip(images, labels)):
+            LOGGER.debug(f'Start training step {i + 1:03}/{nb_train_samples} ({i / nb_train_samples * 100:5.2f}%)')
+            enough_spikes = False
 
-        while not enough_spikes:
-            normalize_weights(net['synapses_input_e'])
-            average_weights_evolution.append(np.average(net['synapses_input_e'].w))
+            while not enough_spikes:
+                normalize_weights(net['synapses_input_e'])
+                average_weights_evolution.append(np.average(net['synapses_input_e'].w))
 
-            input_rates = image.reshape(len(net['neurons_input'])) / 8 * current_input_intensity
-            net['neurons_input'].rates = input_rates * units.Hz
+                input_rates = image.reshape(len(net['neurons_input'])) / 8 * current_input_intensity
+                net['neurons_input'].rates = input_rates * units.Hz
 
-            # Run the network
-            net.run(parameters.exposition_time, namespace=parameters.get_namespace())
+                # Run the network
+                net.run(parameters.exposition_time, namespace=parameters.get_namespace())
 
-            current_spike_count_e = net['spike_counters_e'].count - previous_spike_count_e
-            current_spike_count_i = net['spike_counters_i'].count - previous_spike_count_i
+                current_spike_count_e = net['spike_counters_e'].count - previous_spike_count_e
+                current_spike_count_i = net['spike_counters_i'].count - previous_spike_count_i
 
-            average_spike_evolution_e.append(np.average(current_spike_count_e))
-            average_spike_evolution_i.append(np.average(current_spike_count_i))
+                average_spike_evolution_e.append(np.average(current_spike_count_e))
+                average_spike_evolution_i.append(np.average(current_spike_count_i))
 
-            previous_spike_count_e = np.copy(net['spike_counters_e'].count)
-            previous_spike_count_i = np.copy(net['spike_counters_i'].count)
-            current_sum_spikes_e = np.sum(current_spike_count_e)
-            current_sum_spikes_i = np.sum(current_spike_count_i)
+                previous_spike_count_e = np.copy(net['spike_counters_e'].count)
+                previous_spike_count_i = np.copy(net['spike_counters_i'].count)
+                current_sum_spikes_e = np.sum(current_spike_count_e)
+                current_sum_spikes_i = np.sum(current_spike_count_i)
 
-            LOGGER.debug(
-                f'Number of excitatory spikes: {current_sum_spikes_e} | inhibitor spikes: {current_sum_spikes_i}')
-
-            # Check if enough spike triggered, if under the limit start again with the same image
-            if current_sum_spikes_e < 5:
-                current_input_intensity += 1
-                net['neurons_input'].rates = 0 * units.Hz
-                net.run(parameters.resting_time, namespace=parameters.get_namespace())
                 LOGGER.debug(
-                    f'Not enough spikes ({current_sum_spikes_e}), '
-                    f'retry with higher intensity level ({current_input_intensity})')
-            else:
-                # Store spike activity
-                spike_per_label[int(label)] += current_spike_count_e
+                    f'Number of excitatory spikes: {current_sum_spikes_e} | inhibitor spikes: {current_sum_spikes_i}')
 
-                # Reset network
-                net['neurons_input'].rates = 0 * units.Hz
-                net.run(parameters.resting_time, namespace=parameters.get_namespace())
-                current_input_intensity = parameters.input_intensity
+                # Check if enough spike triggered, if under the limit start again with the same image
+                if current_sum_spikes_e < 5:
+                    current_input_intensity += 1
+                    net['neurons_input'].rates = 0 * units.Hz
+                    net.run(parameters.resting_time, namespace=parameters.get_namespace())
+                    LOGGER.debug(
+                        f'Not enough spikes ({current_sum_spikes_e}), '
+                        f'retry with higher intensity level ({current_input_intensity})')
+                else:
+                    # Store spike activity
+                    spike_per_label[int(label)] += current_spike_count_e
 
-                enough_spikes = True
+                    # Reset network
+                    net['neurons_input'].rates = 0 * units.Hz
+                    net.run(parameters.resting_time, namespace=parameters.get_namespace())
+                    current_input_intensity = parameters.input_intensity
 
-            if enough_spikes is True and np.size(count_activation_map, axis=0) < COURBES:
-                count_activation_map = np.concatenate((count_activation_map, current_spike_count_e.reshape(1, -1)))
+                    enough_spikes = True
+
+                if enough_spikes is True and np.size(count_activation_map, axis=0) < COURBES:
+                    count_activation_map = np.concatenate((count_activation_map, current_spike_count_e.reshape(1, -1)))
 
     time_msg = Stopwatch.stopping('training', len(images))
     LOGGER.info(f'Training completed. {time_msg}.')
 
-    return spike_per_label, average_spike_evolution_e, average_spike_evolution_i, count_activation_map, average_weights_evolution
+    return spike_per_label, average_spike_evolution_e, average_spike_evolution_i, count_activation_map, \
+           average_weights_evolution
 
 
 def test(net, images, labels, labeled_neurons, parameters):
@@ -349,7 +351,6 @@ def test(net, images, labels, labeled_neurons, parameters):
 
 
 def run(parameters: SimulationParameters):
-
     LOGGER.info('Beginning of execution')
 
     # Brian code generation target

@@ -10,6 +10,7 @@ class SimulationParameters:
     """
     nb_train_samples: int = 60000
     nb_test_samples: int = 10000
+    nb_epoch: int = 1
 
     nb_excitator_neurons: int = 400  # a faire varier
     nb_inhibitor_neurons: int = 400  # a faire varier
