@@ -42,7 +42,7 @@ def load_data():
     LOGGER.info(f'MNIST database loaded: {len(images)} images of dimension {images[0].shape}. {time_msg}.')
 
     # Show the first 9 images
-    img_show(images[:9].reshape(9, 28, 28), 'Examples d\'images du jeu de données MNIST', labels[:9])
+    img_show(images[:9].reshape(9, 28, 28), 'Exemples d\'images du jeu de données MNIST', labels[:9])
 
     return images, labels
 
@@ -106,7 +106,8 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     resting_time = 0.15 * units.second
     input_intensity = 2
     start_input_intensity = input_intensity
-    COURBES = 10
+    COURBES = 10 # Nombre de courbes d'activation que l'on souhaite
+    WEIGHTS_TO_RECORD = [4000, 60000]
 
     offset = 20.0 * units.mV
     v_rest_e = -65. * units.mV
@@ -140,7 +141,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     # Training only
     neuron_eqs_e += '\n  dtheta/dt = -theta / (tc_theta)  : volt'
-
+    #
     neuron_eqs_e += '\n  dtimer/dt = 0.1  : second'
 
     neuron_eqs_i = '''
@@ -204,19 +205,17 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     synapses_input_e.connect(True)  # All to all
     synapses_input_e.w = 'rand() * 0.3'
 
-    volt_mon_e = StateMonitor(neurons_e, 'v', record=[0, 1])
-    volt_mon_i = StateMonitor(neurons_i, 'v', record=[0, 1])
+    volt_mon_e = StateMonitor(neurons_e, 'v', record=range(COURBES))
+    volt_mon_i = StateMonitor(neurons_i, 'v', record=range(COURBES))
 
-    mon_input = StateMonitor(synapses_input_e, 'w', record=[0, 1])
-    mon_e_i = StateMonitor(synapses_e_i, 'w', record=[0, 1])
-    mon_i_e = StateMonitor(synapses_i_e, 'w', record=[0, 1])
+    mon_input = StateMonitor(synapses_input_e, 'w', record=WEIGHTS_TO_RECORD)
 
     min_delay = 0 * units.ms
     max_delay = 10 * units.ms
     delta_delay = max_delay - min_delay
 
     # Construct the network
-    net = Network(neurons_input, neurons_i, neurons_e, synapses_i_e, synapses_e_i, synapses_input_e, spike_counters_e)
+    net = Network(neurons_input, neurons_i, neurons_e, synapses_i_e, synapses_e_i, synapses_input_e, spike_counters_e, spike_counters_i, volt_mon_e, volt_mon_i, mon_input)
 
     time_msg = Stopwatch.stopping('network_creation')
     LOGGER.info(f'Network created. {time_msg}.')
@@ -283,11 +282,11 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
                 enough_spikes = True
 
-            # if enough_spikes is True and np.size(count_activation_map, axis=0) < 5:
-            #     count_activation_map = np.concatenate((count_activation_map, current_spike_count_e))
+            if enough_spikes is True and np.size(count_activation_map, axis=0) < COURBES:
+                count_activation_map = np.concatenate((count_activation_map, current_spike_count_e.reshape(1, -1)))
 
     labeled_neurons = chose_labeled_neurons(spike_per_label)
-
+    ax_average_weights = mon_input.t[0:-1:5000]
     time_msg = Stopwatch.stopping('training', nb_train_samples)
     LOGGER.info(f'Training completed. {time_msg}.')
 
@@ -297,85 +296,77 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
     LOGGER.info(f'Start plotting...')
 
     plt.figure()
-    plt.plot(evolution_moyenne_spike_e, label="exitateur")
+    plt.plot(evolution_moyenne_spike_e, linestyle='--',linewidth=3, label="excitateur")
     plt.plot(evolution_moyenne_spike_i, label="inhibiteur")
-    plt.title("Evolution de la moyenne des décharge exitateur")
+    plt.title("Moyenne des décharge des neurones excitateurs avec les échantillons")
+    plt.xlabel('Nombre d\'échantillons')
+    plt.ylabel('Moyenne des décharges')
     plt.legend()
-    # plt.subplot(212)
-    # plt.plot(evolution_moyenne_matrice_poids)
-    # plt.title("Evolution de la moyenne des poids")
+    plt.tight_layout()
     plt.show()
 
     plt.figure()
-    plt.plot(volt_mon_e.t / units.second, volt_mon_e.v[0], label='excitator')
-    plt.plot(volt_mon_i.t / units.second, volt_mon_i.v[0], label='inhibitor')
-    plt.title('Potentiel firtst neuron exc et inhib')
+    for i in range(2):
+        plt.plot(volt_mon_e.t[:10000] / units.second, volt_mon_e.v[i,:10000], label=f'excitator {i}')
+    #     plt.plot(volt_mon_i.t / units.second, volt_mon_i.v[i], label=f'inhibitor {i}')
+    plt.title(f'Potentiel {COURBES} premiers neurones excitateurs')
+    plt.xlabel('Temps (s)')
+    plt.ylabel('voltage des neurones en V')
     plt.legend()
+    plt.tight_layout()
     plt.show()
 
     # Activation map graph
-    # plt.figure()
-    # for i in range(len(count_activation_map)):
-    #     plt.plot(range(len(current_spike_count_e)), count_activation_map[i])
-    # # plot chaque ligne de la matrice spike pour la carte d'activation
-    # plt.title('Carte d'' activation')
-    # plt.show()
+    plt.figure()
+    for i in range(1, np.size(count_activation_map, axis=0)):
+        plt.plot(range(len(current_spike_count_e)), count_activation_map[i,:], label=f'exemple {i}')
+    # plot chaque ligne de la matrice spike pour la carte d'activation
+    plt.xlabel('indice du neurone de la couche excitatrice')
+    plt.ylabel('Nombre de décharge par neurones')
+    plt.title('Carte d\'activation de 9 exemples d\'entraînement')
+    plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
+    plt.ylim([0, 10])
+    plt.tight_layout()
+    plt.show()
 
     # Courbes d'accord
-    # plt.figure()
-    # plt.plot(cou)
-    # # plot les colonnes de spikes pour avoir les courbes d'accord. Pas toutes les faire car beaucoup trop
-    # plt.title(f"Échantillon des courbes d''accord des {COURBES} premiers neurones")
-    # plt.show()
+    plt.figure()
+    for i in range(COURBES):
+        plt.plot(range(10), spike_per_label[:, i*30], label=f'neurone {i+1}')
+    plt.title(f"Échantillon des courbes d\'accord de {COURBES} neurones")
+    plt.xlabel('valeur de l\'étiquette')
+    plt.ylabel('nombre de déchange')
+    plt.tight_layout()
+    plt.legend(loc='upper center', bbox_to_anchor=[1.25, 1])
+    plt.show()
 
     # Histogramme des courbes d'accord
-    fig = plt.figure()
-    plt.hist(synapses_input_e.w, bins=10, edgecolor='black')
-    bins = range(1, 11)
+    plt.figure()
+    plt.hist(synapses_input_e.w, bins=20, edgecolor='black', label='')
     plt.title(f"répartition des poids selon leur valeur après {nb_train_samples} itérations")
-    plt.show()
-
-    # Average of weights with the number of samples
-    # plt.figure()
-    # plt.title(f"Moyenne des poids après {nb_train_samples} itération")
-    # plt.plot(evolution_moyenne_matrice_poids)
-    # plt.show()
-
-    plt.subplot(211)
-    plt.title('Synapses input to exc')
-    plt.plot(synapses_input_e.w, '.k')
-    plt.ylabel('Weights')
-    plt.xlabel('Synapses index')
-    plt.subplot(212)
-    plt.plot(mon_input.t / units.second, mon_input.w.T)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Weight')
+    plt.xlabel('Valeur des poids')
+    plt.ylabel('Quantité dans chaque catégorie')
     plt.tight_layout()
+    plt.legend()
     plt.show()
 
     plt.subplot(211)
-    plt.title('Synapses exc to inh')
-    plt.plot(synapses_e_i.w, '.k')
-    plt.ylabel('Weights')
-    plt.xlabel('Synapses index')
+    plt.title('Synapses échantillonées entrée vers excitateur')
+    plt.plot(synapses_input_e.w[0:-1:200], '.k', label='poids des synapses')
+    plt.ylabel('Poids')
+    plt.xlabel('Indices des synapses')
     plt.subplot(212)
-    plt.plot(mon_e_i.t / units.second, mon_e_i.w.T)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Weight')
+    plt.title('évolution des poids dans le temps')
+    for i in range(len(WEIGHTS_TO_RECORD)):
+        plt.plot(mon_input.t / units.second, mon_input.w[i], label=f'synapse {WEIGHTS_TO_RECORD[i]}')
+    plt.plot(ax_average_weights, evolution_moyenne_matrice_poids, label=f'moyenne des poids')
+    plt.xlabel('Temps (s)')
+    plt.ylabel('Poids')
+    plt.ylim([0, 0.20])
     plt.tight_layout()
+    plt.legend(loc='upper center', bbox_to_anchor=[0.85, 0.90], prop={'size':6})
     plt.show()
 
-    plt.subplot(211)
-    plt.title('Synapses inh to exc')
-    plt.plot(synapses_i_e.w, '.k')
-    plt.ylabel('Weights')
-    plt.xlabel('Synapses index')
-    plt.subplot(212)
-    plt.plot(mon_i_e.t / units.second, mon_i_e.w.T)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Weight')
-    plt.tight_layout()
-    plt.show()
 
     time_msg = Stopwatch.stopping('plotting')
     LOGGER.info(f'Plotting completed. {time_msg}.')
@@ -392,7 +383,7 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
 
     neurons_input.rates = 0 * units.Hz  # Necessary?
     net.run(0 * units.second)  # Why?
-
+    y_pred = np.zeros([1,nb_test_samples])
     for i, (image, label) in enumerate(
             zip(images[60000:60000 + nb_test_samples], labels[60000:60000 + nb_test_samples])):
         LOGGER.debug(f'Start testing step {i + 1:03}/{nb_test_samples} ({i / nb_test_samples * 100:5.2f}%)')
@@ -428,7 +419,8 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
                 input_intensity = start_input_intensity
 
                 inferred_label = infer_label(current_spike_count_e, labeled_neurons)
-
+                print(inferred_label)
+                # y_pred[i] = inferred_label
                 if inferred_label == int(label):
                     nb_correct += 1
                     LOGGER.debug(f'Correctly classified {label} - Current accuracy: {nb_correct / (i + 1) * 100:5.2f}%')
@@ -437,6 +429,12 @@ def run(nb_train_samples: int = 60000, nb_test_samples: int = 10000):
                                  f'- Current accuracy: {nb_correct / (i + 1) * 100:5.2f}%')
 
                 enough_spikes = True
+    # Matrice de confusion
+    # y_true = labels[60000:nb_test_samples]
+    # print('y_true')
+    # print(y_true)
+    # print('y_pred')
+    # print(y_pred)
 
     time_msg = Stopwatch.stopping('testing', nb_test_samples)
     LOGGER.info(f'Testing completed. {time_msg}.')
@@ -449,4 +447,4 @@ if __name__ == '__main__':
     LOGGER.setLevel(logging.DEBUG)
     LOGGER.info('Beginning of execution')
 
-    run(nb_train_samples=20, nb_test_samples=20)
+    run(nb_train_samples=10, nb_test_samples=20)
