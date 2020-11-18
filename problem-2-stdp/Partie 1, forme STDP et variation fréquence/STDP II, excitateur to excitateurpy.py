@@ -10,7 +10,7 @@ vt = -54*mV
 vr = -60*mV
 El = -74*mV
 taue = 5*ms
-F = 63*Hz  #15Hz, 6Hz et 10 Hz
+F = 10*Hz  #15Hz, 6Hz et 10 Hz
 gmax = .01
 dApre1 = 0.12
 dApre2 = -0.06
@@ -58,7 +58,7 @@ s_mon = SpikeMonitor(input)
 
 run(100*second, report='text')
 
-suptitle('Fréquence de {} Hz'.format(F), fontsize=20)
+suptitle('STDP forme II, excitateur à excitateur Fréquence de {} Hz'.format(F), fontsize=15)
 
 subplot(311)
 plot(S.w / gmax, '.k')

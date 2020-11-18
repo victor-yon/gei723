@@ -2,23 +2,33 @@ from brian2 import *
 
 N = 1000
 taum = 10*ms
-taupre = 15*ms
-taupost = 50*ms #taupre
+taupre = 20*ms
+taupost = taupre
 Ee = 0*mV
 vt = -54*mV
 vr = -60*mV
 El = -74*mV
 taue = 5*ms
-F = 63*Hz  #15Hz, 6Hz et 10 Hz
+F = 6*Hz  #15Hz, 6Hz et 10 Hz
 gmax = .01
-dApre = 0.12
-dApost = -0.04  #-dApre * taupre / taupost * 1.05
+dApre = 0.1
+dApost = -0.1 #-dApre * taupre / taupost * 1.05
 #dApost *= gmax
 #dApre *= gmax
 
 eqs_neurons = '''
 dv/dt = (ge * (Ee-v) + El - v) / taum : volt
 dge/dt = -ge / taue : 1
+'''
+
+# Cette variable nous permet de réinitialiser les instants de décharge après que la STDP s'opère dans la synapse
+# On va utiliser la condition int(t_spike_a > t0) pour évaluer si oui ou non on opère le changement de poids
+t0 = 0*second
+
+eqs_stdp = '''
+    w : 1
+    t_spike_a : second 
+    t_spike_b : second
 '''
 
 input = PoissonGroup(N, rates=F)
@@ -41,8 +51,7 @@ s_mon = SpikeMonitor(input)
 
 run(100*second, report='text')
 
-suptitle('STDP forme I, excitateur à excitateur fréquence de {} Hz'.format(F), fontsize=10)
-
+suptitle('Forme classique, fréquence de {} Hz'.format(F), fontsize=20)
 subplot(311)
 plot(S.w / gmax, '.k')
 ylabel('Weight / gmax')
