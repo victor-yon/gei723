@@ -1,6 +1,3 @@
-from math import sqrt, ceil, floor
-from typing import List
-
 import matplotlib.pyplot as plt
 import numpy as np
 from brian2 import NeuronGroup, Synapses, SpikeGeneratorGroup, units, Network
@@ -77,39 +74,4 @@ def stdp_shape(eqs_stdp: str, on_pre: str, on_post: str, neuron_threshold: int =
     plt.title(plot_title)
     plt.xlabel('Δ time (ms)')
     plt.ylabel('Δ weights')
-    plt.show()
-
-
-def img_show(images, title: str = '', ground_truth: List[str] = None, prediction_success: List[bool] = None) -> None:
-    """
-    Show a set of images.
-
-    :param images: A list of torch tensor images
-    :param title: The title of the figure
-    :param ground_truth: The list of ground truth, if defined is show for each images
-    :param prediction_success: The list of prediction success, if defined the ground truth is printed in green for good
-    prediction or red for wrong classification
-    """
-    fig = plt.figure()
-    fig.suptitle(title)
-
-    # Compute the size of the image array
-    x = sqrt(len(images))
-    column = ceil(x)
-    line = floor(x)
-
-    # Show images
-    for i, image in enumerate(images):
-        sub = fig.add_subplot(column, line, i + 1)
-        sub.imshow(image, cmap=plt.cm.gray_r, interpolation='nearest')
-        sub.axis('off')
-
-        if ground_truth is not None:
-            sub.title.set_text(ground_truth[i])
-
-            if prediction_success is not None:
-                if prediction_success[i]:
-                    sub.title.set_color('g')
-                else:
-                    sub.title.set_color('r')
     plt.show()

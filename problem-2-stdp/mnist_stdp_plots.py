@@ -1,5 +1,7 @@
 import logging
+from math import sqrt, ceil, floor
 from pathlib import Path
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,8 +23,8 @@ def plot_post_training(net, train_stats, parameters):
     save_dir = Path(OUT_DIR, parameters.run_name)
 
     # Unpack stats returned from the train function
-    spike_per_label, average_spike_evolution_e, average_spike_evolution_i, count_activation_map, \
-    average_weights_evolution = train_stats
+    spike_per_label_e, spike_per_label_input, average_spike_evolution_e, average_spike_evolution_i, \
+    count_activation_map, average_weights_evolution = train_stats
 
     plt.figure()
     plt.plot(average_spike_evolution_e, linestyle='--', linewidth=3, label="exitateur")
@@ -63,7 +65,7 @@ def plot_post_training(net, train_stats, parameters):
     # Courbes d'accord
     plt.figure()
     for i in range(COURBES):
-        plt.plot(range(10), spike_per_label[:, i * 30], label=f'neurone {i + 1}')
+        plt.plot(range(10), spike_per_label_e[:, i * 30], label=f'neurone {i + 1}')
     plt.title(f"Échantillon des courbes d\'accord de {COURBES} neurones")
     plt.xlabel('valeur de l\'étiquette')
     plt.ylabel('nombre de déchange')
@@ -102,5 +104,68 @@ def plot_post_training(net, train_stats, parameters):
     plt.savefig(save_dir / 'weights_evolution.png')
     plt.show()
 
+    # Activity map
+    activity_map(spike_per_label_input, parameters)
+
     time_msg = Stopwatch.stopping('plotting')
     LOGGER.info(f'Plotting completed. {time_msg}.')
+
+
+def activity_map(spike_per_label_input, parameters):
+    # Normalize the matrix
+    spikes_activity = spike_per_label_input - np.min(spike_per_label_input)
+    spikes_activity = spikes_activity / np.max(spikes_activity)
+
+    # Turn into pixels value [0-255]
+    spikes_activity = np.rint(spikes_activity * 255)
+
+    # Reshape in picture size
+    spikes_activity = spikes_activity.reshape((10, 28, 28))
+
+    fig = plt.figure()
+    fig.suptitle(f'Carte d\'activité des neurones d\'entrée après {parameters.nb_train_samples} itérations')
+
+    # Show images
+    for i, image in enumerate(spikes_activity):
+        sub = fig.add_subplot(2, 5, i + 1)
+        sub.imshow(image, cmap=plt.cm.hot, interpolation='nearest')
+        sub.axis('off')
+        sub.title.set_text(i)
+
+    plt.savefig(Path(OUT_DIR, parameters.run_name, 'activity_map.png'))
+    plt.show()
+
+
+def img_show(images, title: str = '', ground_truth: List[str] = None, prediction_success: List[bool] = None) -> None:
+    """
+    Show a set of images.
+
+    :param images: A list of torch tensor images
+    :param title: The title of the figure
+    :param ground_truth: The list of ground truth, if defined is show for each images
+    :param prediction_success: The list of prediction success, if defined the ground truth is printed in green for good
+    prediction or red for wrong classification
+    """
+    fig = plt.figure()
+    fig.suptitle(title)
+
+    # Compute the size of the image array
+    x = sqrt(len(images))
+    column = ceil(x)
+    line = floor(x)
+
+    # Show images
+    for i, image in enumerate(images):
+        sub = fig.add_subplot(column, line, i + 1)
+        sub.imshow(image, cmap=plt.cm.gray_r, interpolation='nearest')
+        sub.axis('off')
+
+        if ground_truth is not None:
+            sub.title.set_text(ground_truth[i])
+
+            if prediction_success is not None:
+                if prediction_success[i]:
+                    sub.title.set_color('g')
+                else:
+                    sub.title.set_color('r')
+    plt.show()

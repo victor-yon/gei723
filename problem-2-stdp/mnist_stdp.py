@@ -12,10 +12,9 @@ from brian2 import prefs, units, NeuronGroup, Synapses, SpikeMonitor, PoissonGro
 from sklearn import datasets
 
 from mnist_stdp_out import init_out_directory, result_out
-from mnist_stdp_plots import plot_post_training, COURBES
+from mnist_stdp_plots import plot_post_training, COURBES, img_show
 from simulation_parameters import SimulationParameters
 from stopwatch import Stopwatch
-from util_plots import img_show
 
 LOGGER = logging.getLogger('mnist_stdp')
 DATA_DIR = './data'
@@ -189,9 +188,10 @@ def build_network(input_size, parameters):
 
 def setup_network_monitors(net):
     # Spike counter
+    spike_counters_input = SpikeMonitor(net['neurons_input'], record=False, name='spike_counters_input')
     spike_counters_e = SpikeMonitor(net['neurons_e'], record=False, name='spike_counters_e')
     spike_counters_i = SpikeMonitor(net['neurons_i'], record=False, name='spike_counters_i')
-    net.add(spike_counters_e, spike_counters_i)
+    net.add(spike_counters_input, spike_counters_e, spike_counters_i)
 
     # Voltage monitors
     volt_mon_e = StateMonitor(net['neurons_e'], 'v', record=[0, 1], name='volt_mon_e')
@@ -212,12 +212,15 @@ def train(net, images, labels, parameters):
 
     current_input_intensity = parameters.input_intensity
 
-    previous_spike_count_e = np.zeros(len(net['neurons_i']))
-    previous_spike_count_i = np.zeros(len(net['neurons_i']))
-
     # Array to store spike activity for each excitatory neurons
-    spike_per_label = np.zeros((10, len(net['neurons_e'])))
+    spike_per_label_input = np.zeros((10, len(net['neurons_input'])))
+    spike_per_label_e = np.zeros((10, len(net['neurons_e'])))
     count_activation_map = np.zeros([1, len(net['neurons_e'])])
+
+    # Array to store previous spike activity
+    previous_spike_count_input = np.zeros(len(net['neurons_input']))
+    previous_spike_count_e = np.zeros(len(net['neurons_e']))
+    previous_spike_count_i = np.zeros(len(net['neurons_i']))
 
     average_spike_evolution_e = []
     average_spike_evolution_i = []
@@ -247,14 +250,17 @@ def train(net, images, labels, parameters):
                 # Run the network
                 net.run(parameters.exposition_time, namespace=parameters.get_namespace())
 
+                current_spike_count_input = net['spike_counters_input'].count - previous_spike_count_input
                 current_spike_count_e = net['spike_counters_e'].count - previous_spike_count_e
                 current_spike_count_i = net['spike_counters_i'].count - previous_spike_count_i
 
                 average_spike_evolution_e.append(np.average(current_spike_count_e))
                 average_spike_evolution_i.append(np.average(current_spike_count_i))
 
+                previous_spike_count_input = np.copy(net['spike_counters_input'].count)
                 previous_spike_count_e = np.copy(net['spike_counters_e'].count)
                 previous_spike_count_i = np.copy(net['spike_counters_i'].count)
+
                 current_sum_spikes_e = np.sum(current_spike_count_e)
                 current_sum_spikes_i = np.sum(current_spike_count_i)
 
@@ -271,7 +277,8 @@ def train(net, images, labels, parameters):
                         f'retry with higher intensity level ({current_input_intensity})')
                 else:
                     # Store spike activity
-                    spike_per_label[int(label)] += current_spike_count_e
+                    spike_per_label_e[int(label)] += current_spike_count_e
+                    spike_per_label_input[int(label)] += current_spike_count_input
 
                     # Reset network
                     net['neurons_input'].rates = 0 * units.Hz
@@ -286,8 +293,8 @@ def train(net, images, labels, parameters):
     time_msg = Stopwatch.stopping('training', len(images))
     LOGGER.info(f'Training completed. {time_msg}.')
 
-    return spike_per_label, average_spike_evolution_e, average_spike_evolution_i, count_activation_map, \
-           average_weights_evolution
+    return spike_per_label_e, spike_per_label_input, average_spike_evolution_e, average_spike_evolution_i, \
+           count_activation_map, average_weights_evolution
 
 
 def test(net, images, labels, labeled_neurons, parameters):
