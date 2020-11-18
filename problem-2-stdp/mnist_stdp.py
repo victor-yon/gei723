@@ -11,6 +11,7 @@ import numpy as np
 from brian2 import prefs, units, NeuronGroup, Synapses, SpikeMonitor, PoissonGroup, Network, StateMonitor
 from sklearn import datasets
 
+from mnist_stdp_out import init_out_directory, result_out
 from mnist_stdp_plots import plot_post_training, COURBES
 from simulation_parameters import SimulationParameters
 from stopwatch import Stopwatch
@@ -353,9 +354,15 @@ def test(net, images, labels, labeled_neurons, parameters):
 
     LOGGER.info(f'Final accuracy on {nb_test_samples} images: {nb_correct / nb_test_samples * 100:.5}%')
 
+    return nb_correct / nb_test_samples
+
 
 def run(parameters: SimulationParameters):
-    LOGGER.info('Beginning of execution')
+    init_out_directory(parameters)
+
+    LOGGER.info(f'Beginning of run "{parameters.run_name}"')
+    timer = Stopwatch('run')
+    timer.start()
 
     # Brian code generation target
     prefs.codegen.target = 'cython'
@@ -405,4 +412,10 @@ def run(parameters: SimulationParameters):
     test_labels = labels[60000:60000 + parameters.nb_test_samples]
 
     # Start the training loop
-    test(net, test_images, test_labels, labeled_neurons, parameters)
+    accuracy = test(net, test_images, test_labels, labeled_neurons, parameters)
+
+    timer.stop()
+    time_msg = timer.log()
+    LOGGER.info(f'End of run "{parameters.run_name}". {time_msg}.')
+
+    result_out(parameters, accuracy, time_msg)

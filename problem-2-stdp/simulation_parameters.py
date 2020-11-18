@@ -8,6 +8,8 @@ class SimulationParameters:
     """
     Storing all parameters of a simulation.
     """
+    run_name: str = ''
+
     nb_train_samples: int = 60000
     nb_test_samples: int = 10000
     nb_epoch: int = 1
@@ -50,6 +52,9 @@ class SimulationParameters:
             raise ValueError('The number of train sample can\'t be more than 60000')
         if self.nb_test_samples > 10000:
             raise ValueError('The number of test sample can\'t be more than 10000')
+
+    def __str__(self):
+        return '\n'.join([f'{name}: {str(value)}' for name, value in self.get_namespace().items()])
 
     def get_namespace(self):
         """

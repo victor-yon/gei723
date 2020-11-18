@@ -10,8 +10,9 @@ if __name__ == '__main__':
     logging.getLogger('mnist_stdp').setLevel(logging.INFO)
 
     # Set simulation parameters
-    parameters = SimulationParameters(nb_test_samples=20,
-                                      nb_train_samples=20)
+    parameters = SimulationParameters(run_name='run-1',
+                                      nb_train_samples=50,
+                                      nb_test_samples=50)
 
     # Run the beast
     run(parameters)

@@ -1,9 +1,11 @@
 import logging
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 from brian2 import units
 
+from mnist_stdp_out import OUT_DIR
 from stopwatch import Stopwatch
 
 LOGGER = logging.getLogger('mnist_stdp')
@@ -15,6 +17,8 @@ WEIGHTS_TO_RECORD = [4000, 60000]
 def plot_post_training(net, train_stats, parameters):
     Stopwatch.starting('plotting')
     LOGGER.info(f'Start plotting...')
+
+    save_dir = Path(OUT_DIR, parameters.run_name)
 
     # Unpack stats returned from the train function
     spike_per_label, average_spike_evolution_e, average_spike_evolution_i, count_activation_map, \
@@ -28,6 +32,7 @@ def plot_post_training(net, train_stats, parameters):
     plt.ylabel('Moyenne des décharges')
     plt.legend()
     plt.tight_layout()
+    plt.savefig(save_dir / 'spike_mean.png')
     plt.show()
 
     plt.figure()
@@ -38,6 +43,7 @@ def plot_post_training(net, train_stats, parameters):
     plt.ylabel('voltage des neurones en V')
     plt.legend()
     plt.tight_layout()
+    plt.savefig(save_dir / 'excitatory_v.png')
     plt.show()
 
     # Activation map graph
@@ -51,6 +57,7 @@ def plot_post_training(net, train_stats, parameters):
     plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
     plt.ylim([0, 10])
     plt.tight_layout()
+    plt.savefig(save_dir / 'activity_map.png')
     plt.show()
 
     # Courbes d'accord
@@ -62,6 +69,7 @@ def plot_post_training(net, train_stats, parameters):
     plt.ylabel('nombre de déchange')
     plt.tight_layout()
     plt.legend(loc='upper center', bbox_to_anchor=[1.25, 1])
+    plt.savefig(save_dir / 'accord.png')
     plt.show()
 
     # Histogramme des courbes d'accord
@@ -72,6 +80,7 @@ def plot_post_training(net, train_stats, parameters):
     plt.ylabel('Quantité dans chaque catégorie')
     plt.tight_layout()
     plt.legend()
+    plt.savefig(save_dir / 'weights_repartition.png')
     plt.show()
 
     plt.subplot(211)
@@ -90,6 +99,7 @@ def plot_post_training(net, train_stats, parameters):
     plt.ylim([0, 0.20])
     plt.tight_layout()
     plt.legend(loc='upper center', bbox_to_anchor=[0.85, 0.90], prop={'size': 6})
+    plt.savefig(save_dir / 'weights_evolution.png')
     plt.show()
 
     time_msg = Stopwatch.stopping('plotting')
