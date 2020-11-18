@@ -21,9 +21,6 @@ def plot_post_testing(y_pred, y_true, parameters):
 
     figure, ax = plt.subplots()
     max_val = 10
-    # y_true = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    # y_pred = [1, 1, 2, 3, 5, 5, 6, 7, 8, 8]
-
     cf = confusion_matrix(y_true, y_pred, labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     print(cf)
     plt.ylabel('prédictions')

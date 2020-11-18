@@ -357,19 +357,10 @@ def test(net, images, labels, labeled_neurons, parameters):
     time_msg = Stopwatch.stopping('testing', nb_test_samples)
     LOGGER.info(f'Testing completed. {time_msg}.')
     y_true = np.zeros(parameters.nb_test_samples)
-    print
     for i in range(len(y_true)):
         y_true[i] = labels[i]
 
     y_pred = np.array(y_pred)
-    # print(np.shape(y_pred))
-    print(type(y_pred))
-    print(y_pred)
-    print(y_true)
-
-    # print(np.shape(labels[60000:60000+parameters.nb_test_samples]))
-    plot_post_testing(y_pred, y_true, parameters)
-
     LOGGER.info(f'Final accuracy on {nb_test_samples} images: {nb_correct / nb_test_samples * 100:.5}%')
 
     return nb_correct / nb_test_samples
