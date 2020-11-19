@@ -1,18 +1,18 @@
 from brian2 import *
 
 N = 1000
-taum = 10*ms
-taupre = 20*ms
+taum = 1*ms
+taupre = 1*ms
 taupost = taupre
 Ee = 0*mV
 vt = -54*mV
 vr = -60*mV
 El = -74*mV
 taue = 5*ms
-F = 6*Hz  #15Hz, 6Hz et 10 Hz
+F = 15*Hz  #15Hz, 6Hz et 10 Hz
 gmax = .01
-dApre = 0.1
-dApost = -0.1 #-dApre * taupre / taupost * 1.05
+dApre = 0.01
+dApost = -0.01 #-dApre * taupre / taupost * 1.05
 #dApost *= gmax
 #dApre *= gmax
 
