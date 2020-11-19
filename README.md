@@ -54,7 +54,7 @@ pyhton3 main.py
 
 Dans le fichier `main.py` plusieurs variables sont facilement modifiables grace à l'objet "SimulationParameters" dont les différentes paramètres et valeurs par défaut sont accessible dans le fichier `simulation_parameters.py`.
 
-Voici les principales :
+Voici les principaux paramètres :
 
 - `run_name` - Nom de la simulation afin de sauvegarder les résultats dans le dossier `out/`. Ne peut pas être deux fois le même, sauf si son nom est "tmp".
 - `nb_train_samples` - Nombre d'image d'entrainement : Nombre d'image que l'on présente au réseau pendant la phase d'entrainement
