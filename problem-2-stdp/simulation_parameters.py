@@ -23,6 +23,7 @@ class SimulationParameters:
     input_intensity: int = 2
 
     normalization: bool = True
+    classification_type: str = 'single'
 
     offset: Quantity = 20.0 * units.mV
     v_rest_e: Quantity = -65 * units.mV
@@ -54,6 +55,8 @@ class SimulationParameters:
             raise ValueError('The number of train sample can\'t be more than 60000')
         if self.nb_test_samples > 10000:
             raise ValueError('The number of test sample can\'t be more than 10000')
+        if self.classification_type not in ['single', 'group']:
+            raise ValueError('The classification type should be "single" or "group".')
 
     def __str__(self):
         return '\n'.join([f'{name}: {str(value)}' for name, value in self.get_namespace().items()])

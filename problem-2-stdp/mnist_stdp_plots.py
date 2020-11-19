@@ -16,6 +16,7 @@ LOGGER = logging.getLogger('mnist_stdp')
 COURBES = 10  # Nombre de courbes d'activation que l'on souhaite
 WEIGHTS_TO_RECORD = [4000, 60000]
 
+
 def plot_post_testing(y_pred, y_true, parameters):
     # Matrice Confusion
 
@@ -23,9 +24,9 @@ def plot_post_testing(y_pred, y_true, parameters):
 
     figure, ax = plt.subplots()
     max_val = 10
-    cf = confusion_matrix(y_true, y_pred, labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    plt.ylabel('prédictions')
-    plt.xlabel('étiquettes')
+    cf = confusion_matrix(y_true, y_pred, labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], normalize='true')
+    plt.ylabel('étiquettes')
+    plt.xlabel('prédictions')
     plt.title('Matrice de confusion')
     ax.matshow(cf, cmap=plt.cm.Blues)
 
@@ -33,6 +34,7 @@ def plot_post_testing(y_pred, y_true, parameters):
         for j in range(max_val):
             c = cf[j, i]
             ax.text(i, j, str(c), va='center', ha='center')
+
     plt.tight_layout()
     plt.savefig(save_dir / 'confusion_mat.png')
     plt.show()
@@ -77,7 +79,7 @@ def plot_post_training(net, train_stats, parameters):
     # plot chaque ligne de la matrice spike pour la carte d'activation
     plt.xlabel('indice du neurone de la couche excitatrice')
     plt.ylabel('Nombre de décharge par neurones')
-    plt.title('Carte d\'activation de 9 exemples d\'entraînement')
+    plt.title('Carte d\'activation de 9 exemples (couche excitatrice)')
     plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
     plt.ylim([0, 10])
     plt.tight_layout()
@@ -87,7 +89,8 @@ def plot_post_training(net, train_stats, parameters):
     # Courbes d'accord
     plt.figure()
     for i in range(COURBES):
-        plt.plot(range(10), spike_per_label_e[:, int(i *parameters.nb_excitator_neurons/10)], label=f'neurone {int(i *parameters.nb_excitator_neurons/10)}')
+        plt.plot(range(10), spike_per_label_e[:, int(i * parameters.nb_excitator_neurons / 10)],
+                 label=f'neurone {int(i * parameters.nb_excitator_neurons / 10)}')
     plt.title(f"Échantillon des courbes d\'accord de {COURBES} neurones")
     plt.xlabel('valeur de l\'étiquette')
     plt.ylabel('nombre de déchange')
