@@ -23,6 +23,7 @@ class SimulationParameters:
     input_intensity: int = 2
 
     normalization: bool = True
+    classification_type: str = 'single'
 
     offset: Quantity = 20.0 * units.mV
     v_rest_e: Quantity = -65 * units.mV

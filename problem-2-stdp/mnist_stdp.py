@@ -61,17 +61,30 @@ def normalize_weights(synapses_input_e):
     synapses_input_e.w = temp_conn[synapses_input_e.i, synapses_input_e.j]
 
 
-def chose_labeled_neurons(spike_activities):
+def chose_labeled_neurons(spike_activities, parameters):
     """
     Chose the best neuron to recognise each label.
 
-    :param spike_activities:
     :return: A list a index of excitatory neuron that spike the most for each label.
     """
-    return np.argmax(spike_activities, axis=1)
+
+    if parameters.classification_type == 'single':
+        return np.argmax(spike_activities, axis=1)
+
+    elif parameters.classification_type == 'group':
+        # Liste pour chaque classe des indices des neurones qui ont déchargé le plus pour elle pendnat l'entrainement
+        labeled_neuron_group = [[], [], [], [], [], [], [], [], [], []]
+
+        for i in range(len(spike_activities[0])):
+            labeled_neuron_group[np.argmax(spike_activities[:, i])].append(i)
+
+        return labeled_neuron_group
+
+    else:
+        raise ValueError(f'Unknown classification type {parameters.classification_type}.')
 
 
-def infer_label(spike_activity, labeled_neurons):
+def infer_label(spike_activity, labeled_neurons, parameters):
     """
     Infer the label of an image based on the spiking activity of the excitatory neurons.
     Using the labeled neurons.
@@ -80,8 +93,24 @@ def infer_label(spike_activity, labeled_neurons):
     :param labeled_neurons: The list of labeled neurons computed.
     :return: The best guess of label.
     """
-    spikes_interest = np.array([spike_activity[x] for x in labeled_neurons])
-    return np.argmax(spikes_interest)
+
+    if parameters.classification_type == 'single':
+        spikes_interest = np.array([spike_activity[x] for x in labeled_neurons])
+        return np.argmax(spikes_interest)
+
+    elif parameters.classification_type == 'group':
+        # On récupére la moyenne des spikes des neurones correspondant aux classes
+        average = np.zeros(10)
+        for j in range(10):
+            neurone_interet = np.array([int(spike_activity[x]) for x in labeled_neurons[j]])
+            if len(neurone_interet) != 0:
+                average[j] = np.mean(neurone_interet)
+
+        # On trouve le label (égal à l'indice de la plus grosse moyenne)
+        return np.argmax(average)
+
+    else:
+        raise ValueError(f'Unknown classification type {parameters.classification_type}.')
 
 
 def build_network(input_size, parameters):
@@ -349,7 +378,7 @@ def test(net, images, labels, labeled_neurons, parameters):
                 net.run(parameters.resting_time, namespace=parameters.get_namespace())
                 current_input_intensity = parameters.input_intensity
 
-                inferred_label = infer_label(current_spike_count_e, labeled_neurons)
+                inferred_label = infer_label(current_spike_count_e, labeled_neurons, parameters)
                 y_pred[i] = inferred_label
 
                 if inferred_label == int(label):
@@ -419,7 +448,7 @@ def run(parameters: SimulationParameters):
     train_stats = train(net, train_images, train_labels, parameters)
 
     # Find the labeled neurons
-    labeled_neurons = chose_labeled_neurons(train_stats[0])
+    labeled_neurons = chose_labeled_neurons(train_stats[0], parameters)
 
     # Plot at the end of the training
     plot_post_training(net, train_stats, parameters)
