@@ -47,4 +47,4 @@ def result_out(parameters: SimulationParameters, accuracy, time_msg):
                 f'time: {time_msg}'
             ]))
 
-    LOGGER.debug(f'Parameters saved in {parameter_file}')
+    LOGGER.debug(f'Results saved in {parameter_file}')
