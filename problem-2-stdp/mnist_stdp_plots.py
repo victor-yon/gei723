@@ -77,7 +77,7 @@ def plot_post_training(net, train_stats, parameters):
     # plot chaque ligne de la matrice spike pour la carte d'activation
     plt.xlabel('indice du neurone de la couche excitatrice')
     plt.ylabel('Nombre de décharge par neurones')
-    plt.title('Carte d\'activation de 9 exemples d\'entraînement')
+    plt.title('Carte d\'activation de 9 exemples (couche excitatrice)')
     plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
     plt.ylim([0, 10])
     plt.tight_layout()
