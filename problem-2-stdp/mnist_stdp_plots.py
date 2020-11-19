@@ -29,11 +29,14 @@ def plot_post_testing(y_pred, y_true, parameters):
     plt.xlabel('prédictions')
     plt.title('Matrice de confusion')
     ax.matshow(cf, cmap=plt.cm.Blues)
+    ax.xaxis.tick_bottom()
+    ax.set_xticks(range(10))
+    ax.set_yticks(range(10))
 
     for i in range(max_val):
         for j in range(max_val):
             c = cf[j, i]
-            ax.text(i, j, str(c), va='center', ha='center')
+            ax.text(i, j, f'{c:.2f}', va='center', ha='center')
 
     plt.tight_layout()
     plt.savefig(save_dir / 'confusion_mat.png')
