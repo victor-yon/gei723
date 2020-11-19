@@ -60,6 +60,7 @@ s_mon = SpikeMonitor(input)
 
 run(100*second, report='text')
 
+suptitle('STDP forme I, excitateur à inhibiteur, Fréquence de {} Hz'.format(F), fontsize=12)
 
 subplot(311)
 plot(S.w / gmax, '.k')
@@ -73,7 +74,7 @@ plot(mon.t/second, mon.w.T/gmax)
 xlabel('Time (s)')
 ylabel('Weight / gmax')
 tight_layout()
-suptitle('Fréquence de {} Hz'.format(F), fontsize=20)
+
 
 show()
 
