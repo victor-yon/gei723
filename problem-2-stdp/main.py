@@ -1,3 +1,10 @@
+"""
+author: Victor Yon
+date: 19/11/2020
+version history: See Github
+description: Fichier principal pour lancer une simulation.
+"""
+
 import logging
 import sys
 

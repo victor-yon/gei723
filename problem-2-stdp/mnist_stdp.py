@@ -1,6 +1,11 @@
 """
-Original paper from : Peter U. Diehl and Matthew Cook (https://doi.org/10.3389/fncom.2015.00099)
-Code adapted from : https://github.com/zxzhijia/Brian2STDPMNIST
+authors: Victor Yon, Soline Bernard et Antoine Marion
+date: 19/11/2020
+version history: See Github
+description: Création du réseau de neurones avec Biran2, boucles d'entrainement et de test. Chargement des données,
+normalisation et choix des neurones de classification.
+D'après les formules de Peter U. Diehl et Matthew Cook (https://doi.org/10.3389/fncom.2015.00099)
+Code inspiré de : https://github.com/zxzhijia/Brian2STDPMNIST
 """
 
 import logging

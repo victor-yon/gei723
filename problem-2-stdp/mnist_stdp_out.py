@@ -1,3 +1,10 @@
+"""
+author: Victor Yon
+date: 19/11/2020
+version history: See Github
+description: Défintion des fonctions permettant d'entregistrer les résultats dans des fichiers.
+"""
+
 import glob
 import logging
 from pathlib import Path

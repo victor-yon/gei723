@@ -41,6 +41,44 @@ Dans le fichier `main.py` plusieurs variables sont facilement modifiables :
 * `ground_contact_nn.py` : Construction du réseau de neurones permettant de baisser et lever la patte. Ce qui permet de gérer la marche arrière et avant.
 * `legs_nn.py` : Construction du réseau qui gère les 4 neurones moteurs par patte, pour un même groupe de patte (par exemple les impaires gauches).
 
+## Problème 2 : STDP MNIST
+
+### Exécuter
+
+```
+cd problem-2-stdp
+pyhton3 main.py
+```
+
+### Paramètres
+
+Dans le fichier `main.py` plusieurs variables sont facilement modifiables grace à l'objet "SimulationParameters" dont les différentes paramètres et valeurs par défaut sont accessible dans le fichier `simulation_parameters.py`.
+
+Voici les principales :
+
+- `run_name` - Nom de la simulation afin de sauvegarder les résultats dans le dossier `out/`. Ne peut pas être deux fois le même, sauf si son nom est "tmp".
+- `nb_train_samples` - Nombre d'image d'entrainement : Nombre d'image que l'on présente au réseau pendant la phase d'entrainement
+- `nb_test_samples` - Nombre d'image de test : Nombre d'images que l'on présente au réseau pendant la phase de test.
+- `tc_theta` et `theta_plus` - Homéostasie : Nous activons ou désactivons le l'homéostasie pour chaque test.
+- `nu_pre` et `nu_post` - Taux d'apprentissage : permet de réguler l'apprentissage en augmentant le poids de façon partiel pendant le processus de STDP. Cela permet d'éviter d'atteindre des valeurs de poids trop élevé trop rapidement.
+- `nb_excitator_neurons` et `nb_inhibitor_neurons` - Nombre de neurones excitateurs : nombre de neurones que l'on définit pour la couche excitatrice ET inhibitrice.
+- `nb_epoch` - Nombre de fois ou l'on présente le jeu de données permet d'améliorer l'apprentissage sur certains types d'image.
+- `normalization` - Normalisation des poids : Normalisation des poids par colonnes avant chaque itération d'entrainement.
+- `classification_type` - Type de classification : Deux types de classification, "single" et "group". La classification single, prend le neurone qui a déchargé le plus pendant l'entrainement pour un label donné, et la classification pendant le test sera effectué en fonction des 10 neurones labels sélectionnés. Pour la classification en groupe de neurone, chaque neurone de la couche excitatrice est associé au label pour lequel il a le plus déchargé pendant l'entrainement. Pendant la phase de test, le groupe de neurone correspondant à un label dont la moyenne de décharge est la plus grande donnera le label de l'image testée. 
+
+### Fichiers
+
+- `main.py` : Fichier principal pour lancer une simulation.
+- `mnist_stdp.py` : Création du réseau de neurones avec Biran2, boucles d'entrainement et de test. Chargement des données, normalisation et choix des neurones de classification.
+- `mnist_stdp_out.py` : Défintion des fonctions permettant d'entregistrer les résultats dans des fichiers.
+- `mnist_stdp_plots.py` : Définition des méthodes permettant de créer des figures avec matplotlib et de les enregistrer.
+- `simulation_parameters.py` : Définition d'un objet de type `dataclass` permettant de stocker les paramètres d'entrainement et leurs valeurs par défaut.
+- `stopwatch.py` : Défintion de fonctions utilitaires permettant de mesurer les temps d'exécution.
+- `stdp_shape_freq_study/` : Contient les simulations permettant de mesurer les effets de la forme des équations de STDP ainsi que le changement de fréquence d'entrée.
+- `out/` : Dossier de sortie des résultats, doit contenir des fichiers texts et images après chaque simulation.
+- `data/` : Dossier contenant les fichiers temporaires pour accélérer les simulations.
+- `diehl_cook_classification.py` : Notebook à trous utilisé pour tester les premières implémentations. /!\ N'est pas utilisé pour les simulations finales.
+
 # Auteurs
 
 * Soline Bernard

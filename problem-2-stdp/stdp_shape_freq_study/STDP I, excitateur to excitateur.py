@@ -1,3 +1,10 @@
+"""
+author: Soline Bernard
+date: 19/11/2020
+version history: See Github
+description: Contient les simulations permettant de mesurer les effets de la forme des équations de STDP ainsi que le changement de fréquence d'entrée.
+"""
+
 from brian2 import *
 
 N = 1000

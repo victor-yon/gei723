@@ -1,3 +1,10 @@
+"""
+author: Antoine Marion et Victor Yon
+date: 19/11/2020
+version history: See Github
+description: Définition d'un objet de type `dataclass` permettant de stocker les paramètres d'entrainement et leurs valeurs par défaut.
+"""
+
 from dataclasses import dataclass
 
 from brian2 import units, Quantity
@@ -14,8 +21,8 @@ class SimulationParameters:
     nb_test_samples: int = 10000
     nb_epoch: int = 1
 
-    nb_excitator_neurons: int = 400  # a faire varier
-    nb_inhibitor_neurons: int = 400  # a faire varier
+    nb_excitator_neurons: int = 400
+    nb_inhibitor_neurons: int = 400
 
     exposition_time: Quantity = 0.35 * units.second
     resting_time: Quantity = 0.15 * units.second
@@ -39,10 +46,10 @@ class SimulationParameters:
     tc_post_1: Quantity = 20 * units.ms
     tc_post_2: Quantity = 40 * units.ms
 
-    nu_pre: float = 0.0001  # learning rate à faire varier
-    nu_post: float = 0.01  # learning rate à faire varier
+    nu_pre: float = 0.0001  # learning rate
+    nu_post: float = 0.01  # learning rate
 
-    wmax: float = 1.0  # à faire varier
+    wmax: float = 1.0
 
     tc_theta: Quantity = 1e7 * units.ms
     theta_plus: Quantity = 0.05 * units.mV

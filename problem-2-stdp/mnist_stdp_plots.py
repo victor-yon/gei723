@@ -1,3 +1,10 @@
+"""
+author: Antoine Marion et Victor Yon
+date: 19/11/2020
+version history: See Github
+description: Définition des méthodes permettant de créer des figures avec matplotlib et de les enregistrer.
+"""
+
 import logging
 from math import sqrt, ceil, floor
 from pathlib import Path

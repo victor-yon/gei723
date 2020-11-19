@@ -1,3 +1,10 @@
+"""
+author: Victor Yon
+date: 15/07/2019
+version history: See Github
+description: Défintion de fonctions utilitaires permettant de mesurer les temps d'exécution.
+"""
+
 from time import time
 
 
