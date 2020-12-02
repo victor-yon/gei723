@@ -35,8 +35,14 @@ class Parameters:
         """
         Validate parameters.
         """
-        if self.nb_train_samples + self.nb_test_samples + self.nb_validation_samples > 70000:
-            raise ValueError('The total number of sample can\'t be more than 70000')
+
+        # Keep 10 000 sample for validation only
+        if self.nb_train_samples + self.nb_test_samples > 60_000:
+            raise ValueError('The number of train + test samples can\'t be more than 60 000 '
+                             '(keep 10 000 for validation)')
+
+        if self.nb_train_samples + self.nb_test_samples + self.nb_validation_samples > 70_000:
+            raise ValueError('The total number of sample can\'t be more than 70 000')
 
         if self.duration_per_image.units != self.delta_t.units:
             raise ValueError(f'duration_per_image ({self.duration_per_image}) and delta_t ({self.delta_t})'
