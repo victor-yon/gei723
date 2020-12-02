@@ -6,6 +6,8 @@ from pathlib import Path
 import numpy as np
 import torch
 from sklearn import datasets
+from sklearn.metrics import confusion_matrix
+from plots import plot_post_test
 from sparse import COO
 
 from network import SpikeFunction
@@ -221,6 +223,7 @@ def run(p: Parameters):
 
     nb_test_batches = nb_test // p.batch_size
     correct_label_count = 0
+    y_pred = []
     # We only need to batchify the test set for memory requirements
     for batch_indices in np.array_split(test_indices, nb_test_batches):
         test_spike_train = torch.FloatTensor(images_spike_train[batch_indices].todense()).to(device)
@@ -234,6 +237,7 @@ def run(p: Parameters):
         _, am = torch.max(network_output, 1)
         inferred_labels = am.detach().cpu().numpy()
         correct_label_count += np.sum(inferred_labels == labels[batch_indices])
+        y_pred.append(inferred_labels)
 
         if LOGGER.isEnabledFor(logging.DEBUG):
             # Show result for the first image of the batch
@@ -255,6 +259,11 @@ def run(p: Parameters):
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting.')
 
     # Mettres d'autres graphiques ici
+    
+    y_true = labels[test_indices]
+    y_pred = np.array(y_pred)
+    y_pred = y_pred[0,:]
+    plot_post_test(y_pred, y_true, Parameters)
 
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
 
