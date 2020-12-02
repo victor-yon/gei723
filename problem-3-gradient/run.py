@@ -10,6 +10,7 @@ from sparse import COO
 
 from network import SpikeFunction
 from parameters import Parameters
+from plots import plot_losses
 from results_output import init_out_directory, result_out
 from stopwatch import Stopwatch
 
@@ -147,6 +148,7 @@ def run(p: Parameters):
     np.random.shuffle(train_indices)
 
     nb_train_batches = len(train_indices) // p.batch_size
+    losses_evolution = []
 
     for epoch in range(p.nb_epoch):
         LOGGER.info(f'Start epoch {epoch + 1}/{p.nb_epoch} ({epoch / p.nb_epoch * 100:4.1f}%)')
@@ -178,6 +180,7 @@ def run(p: Parameters):
                              f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
 
             loss = loss_fn(network_output, target_output)
+            losses_evolution.append(float(loss))
 
             # Backward propagation
             optimizer.zero_grad()
@@ -191,6 +194,14 @@ def run(p: Parameters):
 
     time_msg = Stopwatch.stopping('training', p.nb_train_samples * p.nb_epoch)
     LOGGER.info(f'Training completed. {time_msg}.')
+
+    # ============================ Plotting ============================
+
+    LOGGER.info(f'Post training plotting.')
+
+    plot_losses(losses_evolution, p)
+
+    LOGGER.info(f'Post training plotting completed and saved.')
 
     # ============================= Testing ============================
 
@@ -238,6 +249,14 @@ def run(p: Parameters):
 
     accuracy = correct_label_count / nb_test
     LOGGER.info(f'Final accuracy on {nb_test} images: {accuracy * 100:.5}%')
+
+    # ============================ Plotting ============================
+
+    LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting.')
+
+    # Mettres d'autres graphiques ici
+
+    LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
 
     timer.stop()
     time_msg = timer.log()

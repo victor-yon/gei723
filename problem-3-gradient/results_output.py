@@ -9,6 +9,8 @@ import glob
 import logging
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+
 from parameters import Parameters
 
 OUT_DIR = './out'
@@ -55,3 +57,8 @@ def result_out(parameters: Parameters, accuracy, time_msg):
             ]))
 
     LOGGER.debug(f'Results saved in {parameter_file}')
+
+
+def save_plot(file_name: str, parameters: Parameters):
+    save_dir = Path(OUT_DIR, parameters.run_name)
+    plt.savefig(save_dir / f'{file_name}.png')
