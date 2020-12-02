@@ -38,6 +38,16 @@ class Parameters:
         if self.nb_train_samples + self.nb_test_samples + self.nb_validation_samples > 70000:
             raise ValueError('The total number of sample can\'t be more than 70000')
 
+        if self.duration_per_image.units != self.delta_t.units:
+            raise ValueError(f'duration_per_image ({self.duration_per_image}) and delta_t ({self.delta_t})'
+                             f' should have the same unit.')
+
+        if self.tau_v.units != self.delta_t.units:
+            raise ValueError(f'tau_v ({self.tau_v}) and delta_t ({self.delta_t}) should have the same unit.')
+
+        if self.tau_i.units != self.delta_t.units:
+            raise ValueError(f'tau_i ({self.tau_i}) and delta_t ({self.delta_t}) should have the same unit.')
+
     def __str__(self):
         return '\n'.join([f'{name}: {str(value)}' for name, value in self.get_namespace().items()])
 

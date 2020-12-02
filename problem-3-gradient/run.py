@@ -81,9 +81,9 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
     for t in range(p.absolute_duration):  # For every timestep
         # Apply the leak
         # Using tau_v with euler or exact method
-        membrane_potential_at_t = (1 - t / int(p.tau_v)) * membrane_potential_at_t
+        membrane_potential_at_t = (1 - int(p.delta_t) / int(p.tau_v)) * membrane_potential_at_t
         # Using tau_i with euler or exact method
-        membrane_current_at_t = (1 - t / int(p.tau_i)) * membrane_current_at_t
+        membrane_current_at_t = (1 - int(p.delta_t) / int(p.tau_i)) * membrane_current_at_t
 
         # Select the input current at time t
         input_at_t = input_current[:, :, t]
@@ -92,7 +92,7 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
         membrane_current_at_t += input_at_t
 
         # Integrate the input to the membrane potential
-        membrane_potential_at_t += membrane_current_at_t / int(p.tau_v)
+        membrane_potential_at_t += membrane_current_at_t
 
         # Apply the non-differentiable function
         recorded_spikes_at_t = SpikeFunction.apply(membrane_potential_at_t - p.v_threshold)
@@ -219,13 +219,12 @@ def run(p: Parameters):
         # Do the prediction by selecting the output neuron with the most number of spikes
         _, am = torch.max(network_output, 1)
         inferred_labels = am.detach().cpu().numpy()
-        correct_label_count += np.sum(inferred_labels == labels[test_indices])
-        print(correct_label_count)
+        correct_label_count += np.sum(inferred_labels == labels[batch_indices])
 
         if LOGGER.isEnabledFor(logging.DEBUG):
             # Show result for the first image of the batch
             inferred_label = inferred_labels[0]
-            correct_label = int(labels[test_indices[0]])
+            correct_label = int(labels[batch_indices[0]])
             net_output_str = " | ".join(map(lambda x: f'{x[0]}:{int(x[1])}', enumerate(network_output[0])))
             LOGGER.debug(f'Example - spikes per label: {net_output_str}')
             LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
