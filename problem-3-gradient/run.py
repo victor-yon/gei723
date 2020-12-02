@@ -10,6 +10,7 @@ from sparse import COO
 
 from network import SpikeFunction
 from parameters import Parameters
+from stopwatch import Stopwatch
 
 LOGGER = logging.getLogger('mnist_grad')
 DATA_DIR = './data'
@@ -19,6 +20,8 @@ IMAGE_SIZE = 28 * 28
 
 
 def load_data(p: Parameters):
+    Stopwatch.starting('load_data')
+
     save_path = Path(DATA_DIR, 'mnist_grad.p')
 
     if save_path.is_file():
@@ -54,6 +57,9 @@ def load_data(p: Parameters):
     # of shape (nb_of_samples, nb_of_features, absolute_duration)
     images_spike_train = COO((sample_id, neuron_idx, time_of_spike[sample_id, neuron_idx]),
                              np.ones_like(sample_id), shape=(len(images), IMAGE_SIZE, p.absolute_duration))
+
+    time_msg = Stopwatch.stopping('load_data')
+    LOGGER.info(f'MNIST database loaded: {len(images)} images of dimension {images[0].shape}. {time_msg}.')
 
     return images_spike_train, labels
 
@@ -105,8 +111,14 @@ def run(p: Parameters):
     torch.manual_seed(0)
     np.random.seed(0)
 
+    LOGGER.info(f'Beginning of run "{p.run_name}"')
+    timer = Stopwatch('run')
+    timer.start()
+
     # Use the GPU unless there is none available
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+    LOGGER.debug(f'pyTorch device selected: {device}')
 
     # Load the datasets
     images_spike_train, labels = load_data(p)
@@ -124,6 +136,9 @@ def run(p: Parameters):
 
     # ============================ Training ============================
 
+    LOGGER.info(f'Start training on {p.nb_train_samples} images...')
+    Stopwatch.starting('training')
+
     train_indices = np.arange(p.nb_train_samples)
     # Shuffle the train indices
     np.random.shuffle(train_indices)
@@ -131,8 +146,9 @@ def run(p: Parameters):
     nb_train_batches = len(train_indices) // p.batch_size
 
     for epoch in range(p.nb_epoch):
+        LOGGER.info(f'Start epoch {epoch + 1:02}/{p.nb_epoch} ({epoch / p.nb_epoch * 100:4.1f}%)')
         epoch_loss = 0
-        for batch_indices in np.array_split(train_indices, nb_train_batches):
+        for i, batch_indices in enumerate(np.array_split(train_indices, nb_train_batches)):
             # Select batch and convert to tensors
             batch_spike_train = torch.FloatTensor(images_spike_train[batch_indices].todense()).to(device)
             batch_labels = torch.LongTensor(labels[batch_indices, np.newaxis]).to(device)
@@ -148,6 +164,16 @@ def run(p: Parameters):
             layer_1_spikes = run_spiking_layer(batch_spike_train, w1, device, p)
             layer_2_spikes = run_spiking_layer(layer_1_spikes, w2, device, p)
             network_output = torch.sum(layer_2_spikes, 2)  # Count the spikes over time axis
+
+            if LOGGER.isEnabledFor(logging.DEBUG):
+                # Show result for the first image of the batch
+                inferred_label = torch.argmax(network_output[0])
+                correct_label = int(batch_labels[0])
+                net_output_str = " | ".join(map(lambda x: f'{x[0]}:{int(x[1])}', enumerate(network_output[0])))
+                LOGGER.debug(f'Example - spikes per label: {net_output_str}')
+                LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
+                             f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
+
             loss = loss_fn(network_output, target_output)
 
             # Backward propagation
@@ -156,7 +182,12 @@ def run(p: Parameters):
             optimizer.step()
             epoch_loss += loss.item()
 
-        print(f"Epoch {epoch + 1:d} -- loss : {epoch_loss / nb_train_batches:.4f}")
+            LOGGER.debug(f'Batch {i + 1:03}/{nb_train_batches} completed with loss : {loss:.4f}')
+
+        LOGGER.info(f'Epoch loss: {epoch_loss / nb_train_batches:.4f}')
+
+    time_msg = Stopwatch.stopping('training', p.nb_train_samples * p.nb_epoch)
+    LOGGER.info(f'Training completed. {time_msg}.')
 
     # ============================= Testing ============================
 
@@ -169,8 +200,12 @@ def run(p: Parameters):
         end_indices = start_indices + p.nb_test_samples
 
     test_indices = np.arange(start_indices, end_indices)
+    nb_test = len(test_indices)
 
-    nb_test_batches = len(test_indices) // p.batch_size
+    LOGGER.info(f'Start {"validation" if p.use_validation else "test"} on {nb_test} images...')
+    Stopwatch.starting('testing')
+
+    nb_test_batches = nb_test // p.batch_size
     correct_label_count = 0
     # We only need to batchify the test set for memory requirements
     for batch_indices in np.array_split(test_indices, nb_test_batches):
@@ -183,6 +218,24 @@ def run(p: Parameters):
 
         # Do the prediction by selecting the output neuron with the most number of spikes
         _, am = torch.max(network_output, 1)
-        correct_label_count += np.sum(am.detach().cpu().numpy() == labels[test_indices])
+        inferred_labels = am.detach().cpu().numpy()
+        correct_label_count += np.sum(inferred_labels == labels[test_indices])
+        print(correct_label_count)
 
-    print(f"Model accuracy on test set: {correct_label_count / len(test_indices):.3f}")
+        if LOGGER.isEnabledFor(logging.DEBUG):
+            # Show result for the first image of the batch
+            inferred_label = inferred_labels[0]
+            correct_label = int(labels[test_indices[0]])
+            net_output_str = " | ".join(map(lambda x: f'{x[0]}:{int(x[1])}', enumerate(network_output[0])))
+            LOGGER.debug(f'Example - spikes per label: {net_output_str}')
+            LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
+                         f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
+
+    time_msg = Stopwatch.stopping('testing', nb_test)
+    LOGGER.info(f'{"Validation" if p.use_validation else "Testing"} completed. {time_msg}.')
+
+    LOGGER.info(f'Final accuracy on {nb_test} images: {correct_label_count / nb_test * 100:.5}%')
+
+    timer.stop()
+    time_msg = timer.log()
+    LOGGER.info(f'End of run "{p.run_name}". {time_msg}.')
