@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 
 from parameters import Parameters
 from results_output import save_plot
+from sklearn.metrics import confusion_matrix
 
 
 def plot_losses(losses_evolution, parameters: Parameters):
