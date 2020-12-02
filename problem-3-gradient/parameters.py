@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Tuple
 
 import quantities as units
 
@@ -24,8 +25,10 @@ class Parameters:
     tau_i: units = 5 * units.ms
     v_threshold: float = 1.0
 
-    nb_hidden_neurons: int = 128
+    size_hidden_layers: Tuple[int, ...] = (128,)  # Number of neuron for each hidden layers
     learning_rate: int = 0.01
+
+    surrogate_gradient: str = 'relu'  # "relu" or "fast_sigmoid" or "piecewise"
 
     @property
     def absolute_duration(self):
@@ -36,10 +39,13 @@ class Parameters:
         Validate parameters.
         """
 
+        if len(self.size_hidden_layers) < 1:
+            raise ValueError('At least one hidden layer is required.')
+
         # Keep 10 000 sample for validation only
         if self.nb_train_samples + self.nb_test_samples > 60_000:
             raise ValueError('The number of train + test samples can\'t be more than 60 000 '
-                             '(keep 10 000 for validation)')
+                             '(keep 10 000 for validation).')
 
         if self.nb_train_samples + self.nb_test_samples + self.nb_validation_samples > 70_000:
             raise ValueError('The total number of sample can\'t be more than 70 000')
@@ -53,6 +59,10 @@ class Parameters:
 
         if self.tau_i.units != self.delta_t.units:
             raise ValueError(f'tau_i ({self.tau_i}) and delta_t ({self.delta_t}) should have the same unit.')
+
+        if self.surrogate_gradient not in ['relu', 'fast_sigmoid', 'piecewise']:
+            raise ValueError(f'Unknown surrogate_gradient "{self.surrogate_gradient}".'
+                             f'Should be: "relu" or "fast_sigmoid" or "piecewise".')
 
     def __str__(self):
         return '\n'.join([f'{name}: {str(value)}' for name, value in self.get_namespace().items()])
