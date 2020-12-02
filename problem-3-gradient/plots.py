@@ -4,6 +4,7 @@ from parameters import Parameters
 from results_output import save_plot
 from sklearn.metrics import confusion_matrix
 
+COURBES = 10
 
 def plot_losses(losses_evolution, parameters: Parameters):
     plt.plot(losses_evolution)
@@ -37,9 +38,29 @@ def plot_post_test(y_pred, y_true, parameters):
             ax.text(i, j, f'{c:.2f}', va='center', ha='center')
 
     plt.tight_layout()
-    # plt.savefig(save_dir / 'confusion_mat.png')
+    save_plot('confusion_matrix', parameters)
     plt.show()
+
+# Carte d'activation
+def plot_activation_map():
+    plt.figure()
+    for i in range(1, np.size(count_activation_map, axis=0)):
+        plt.plot(range(parameters.nb_excitator_neurons), count_activation_map[i, :], label=f'exemple {i}')
+    # plot chaque ligne de la matrice spike pour la carte d'activation
+    plt.xlabel('indice du neurone de la couche excitatrice')
+    plt.ylabel('Nombre de décharge par neurones')
+    plt.title('Carte d\'activation de 9 exemples (couche excitatrice)')
+    plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
+    #plt.ylim([0, 10])
+    plt.tight_layout()
+    save_plot('activation_map_hidden_layer',parameters)
+    plt.show()
+
+
 # Courbes d'accord
+
+
+
 
 # Histogramme des courbes des poids
 
