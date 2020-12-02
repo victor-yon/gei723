@@ -6,14 +6,13 @@ from pathlib import Path
 import numpy as np
 import torch
 from sklearn import datasets
-from sklearn.metrics import confusion_matrix
-from plots import plot_post_test
 from sparse import COO
 
-from network import SpikeFunction
 from parameters import Parameters
 from plots import plot_losses
+from plots import plot_post_test
 from results_output import init_out_directory, result_out
+from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise
 from stopwatch import Stopwatch
 
 LOGGER = logging.getLogger('mnist_grad')
@@ -137,8 +136,18 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
         # Integrate the input to the membrane potential
         membrane_potential_at_t += membrane_current_at_t
 
+        # Select the surrogate function based on the parameters
+        spike_functions = None
+        if p.surrogate_gradient == 'relu':
+            spike_functions = SpikeFunctionRelu
+        elif p.surrogate_gradient == 'fast_sigmoid':
+            spike_functions = SpikeFunctionFastSigmoid
+        elif p.surrogate_gradient == 'piecewise':
+            spike_functions = SpikeFunctionPiecewise
+
         # Apply the non-differentiable function
-        recorded_spikes_at_t = SpikeFunction.apply(membrane_potential_at_t - p.v_threshold)
+        recorded_spikes_at_t = spike_functions.apply(membrane_potential_at_t - p.v_threshold)
+
         recorded_spikes.append(recorded_spikes_at_t)
 
         # Reset the spiked neurons
@@ -284,7 +293,7 @@ def run(p: Parameters):
             # Show result for the first image of the batch
             inferred_label = inferred_labels[0]
             correct_label = int(labels[batch_indices[0]])
-            net_output_str = " | ".join(map(lambda x: f'{x[0]}:{int(x[1])}', enumerate(network_output[0])))
+            net_output_str = " | ".join(map(lambda x: f'{x[0]}:{int(x[1]):02}', enumerate(network_output[0])))
             LOGGER.debug(f'Example - spikes per label: {net_output_str}')
             LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
                          f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
