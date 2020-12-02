@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Tuple
 
 import quantities as units
 
@@ -24,7 +25,7 @@ class Parameters:
     tau_i: units = 5 * units.ms
     v_threshold: float = 1.0
 
-    nb_hidden_neurons: int = 128
+    size_hidden_layers: Tuple[int, ...] = (128,)
     learning_rate: int = 0.01
 
     @property
@@ -36,10 +37,13 @@ class Parameters:
         Validate parameters.
         """
 
+        if len(self.size_hidden_layers) < 1:
+            raise ValueError('At least one hidden layer is required.')
+
         # Keep 10 000 sample for validation only
         if self.nb_train_samples + self.nb_test_samples > 60_000:
             raise ValueError('The number of train + test samples can\'t be more than 60 000 '
-                             '(keep 10 000 for validation)')
+                             '(keep 10 000 for validation).')
 
         if self.nb_train_samples + self.nb_test_samples + self.nb_validation_samples > 70_000:
             raise ValueError('The total number of sample can\'t be more than 70 000')

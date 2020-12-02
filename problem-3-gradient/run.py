@@ -66,6 +66,45 @@ def load_data(p: Parameters):
     return images_spike_train, labels
 
 
+def init_net_params(run_parameters: Parameters, device):
+    LOGGER.info(f'Initialize network parameters on {len(run_parameters.size_hidden_layers)} hidden layers')
+    LOGGER.info('Network shape : ' + str(IMAGE_SIZE) + ' -> ' +
+                ' -> '.join(map(str, run_parameters.size_hidden_layers))
+                + ' -> ' + str(NB_CLASSES))
+
+    # Model's parameters
+    params = []
+    nb_params = 0
+
+    # Input -> first hidden
+    weights_input_hidden = torch.empty((IMAGE_SIZE, run_parameters.size_hidden_layers[0]),
+                                       device=device, dtype=torch.float, requires_grad=True)
+    torch.nn.init.normal_(weights_input_hidden, mean=0., std=.1)
+    params.append(weights_input_hidden)
+    nb_params += IMAGE_SIZE * run_parameters.size_hidden_layers[0]
+
+    # All others hidden -> hidden
+    for layer_index in range(len(run_parameters.size_hidden_layers) - 1):
+        weights_hidden_hidden = torch.empty(
+            (run_parameters.size_hidden_layers[layer_index], run_parameters.size_hidden_layers[layer_index + 1]),
+            device=device, dtype=torch.float, requires_grad=True)
+
+        torch.nn.init.normal_(weights_hidden_hidden, mean=0., std=.1)
+        params.append(weights_hidden_hidden)
+        nb_params += run_parameters.size_hidden_layers[layer_index] * run_parameters.size_hidden_layers[layer_index + 1]
+
+    # Last layer -> output
+    weights_hidden_output = torch.empty((run_parameters.size_hidden_layers[-1], NB_CLASSES),
+                                        device=device, dtype=torch.float, requires_grad=True)
+    torch.nn.init.normal_(weights_hidden_output, mean=0., std=.1)
+    params.append(weights_hidden_output)
+    nb_params += run_parameters.size_hidden_layers[-1] * NB_CLASSES
+
+    LOGGER.info(f'Network parameters initialized ({nb_params})')
+
+    return params
+
+
 def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
     """Here we implement a current-LIF dynamic in pytorch"""
 
@@ -110,14 +149,14 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
 def run(p: Parameters):
     init_out_directory(p)
 
+    LOGGER.info(f'Beginning of run "{p.run_name}"')
+    timer = Stopwatch('run')
+    timer.start()
+
     # Reproducibility
     random.seed(0)
     torch.manual_seed(0)
     np.random.seed(0)
-
-    LOGGER.info(f'Beginning of run "{p.run_name}"')
-    timer = Stopwatch('run')
-    timer.start()
 
     # Use the GPU unless there is none available
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -127,14 +166,10 @@ def run(p: Parameters):
     # Load the datasets
     images_spike_train, labels = load_data(p)
 
-    # Initialise model's parameters
-    w1 = torch.empty((IMAGE_SIZE, p.nb_hidden_neurons), device=device, dtype=torch.float, requires_grad=True)
-    torch.nn.init.normal_(w1, mean=0., std=.1)
+    # Initialize the network parameters
+    params = init_net_params(p, device)
 
-    w2 = torch.empty((p.nb_hidden_neurons, NB_CLASSES), device=device, dtype=torch.float, requires_grad=True)
-    torch.nn.init.normal_(w2, mean=0., std=.1)
-
-    params = [w1, w2]  # Trainable parameters
+    # Setup the optimizer and the loss function
     optimizer = torch.optim.Adam(params, lr=p.learning_rate, amsgrad=True)
     loss_fn = torch.nn.MSELoss(reduction='mean')
 
@@ -165,10 +200,13 @@ def run(p: Parameters):
             min_spike_count = 10 * torch.ones((len(batch_labels), 10), device=device, dtype=torch.float)
             target_output = min_spike_count.scatter_(1, batch_labels, 100.0)
 
-            # Forward propagation
-            layer_1_spikes = run_spiking_layer(batch_spike_train, w1, device, p)
-            layer_2_spikes = run_spiking_layer(layer_1_spikes, w2, device, p)
-            network_output = torch.sum(layer_2_spikes, 2)  # Count the spikes over time axis
+            # Forward propagation through each layers
+            next_layer_input = batch_spike_train
+            for layer_params in params:
+                next_layer_input = run_spiking_layer(next_layer_input, layer_params, device, p)
+
+            # Count the spikes over time axis from the last layer output
+            network_output = torch.sum(next_layer_input, 2)
 
             if LOGGER.isEnabledFor(logging.DEBUG):
                 # Show result for the first image of the batch
@@ -223,12 +261,15 @@ def run(p: Parameters):
     correct_label_count = 0
     # We only need to batchify the test set for memory requirements
     for batch_indices in np.array_split(test_indices, nb_test_batches):
-        test_spike_train = torch.FloatTensor(images_spike_train[batch_indices].todense()).to(device)
+        batch_spike_test = torch.FloatTensor(images_spike_train[batch_indices].todense()).to(device)
 
-        # Same forward propagation as before
-        layer_1_spikes = run_spiking_layer(test_spike_train, w1, device, p)
-        layer_2_spikes = run_spiking_layer(layer_1_spikes, w2, device, p)
-        network_output = torch.sum(layer_2_spikes, 2)  # Count the spikes over time axis
+        # Forward propagation through each layers
+        next_layer_input = batch_spike_test
+        for layer_params in params:
+            next_layer_input = run_spiking_layer(next_layer_input, layer_params, device, p)
+
+        # Count the spikes over time axis from the last layer output
+        network_output = torch.sum(next_layer_input, 2)
 
         # Do the prediction by selecting the output neuron with the most number of spikes
         _, am = torch.max(network_output, 1)
