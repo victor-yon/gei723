@@ -10,6 +10,7 @@ from sparse import COO
 
 from network import SpikeFunction
 from parameters import Parameters
+from results_output import init_out_directory, result_out
 from stopwatch import Stopwatch
 
 LOGGER = logging.getLogger('mnist_grad')
@@ -106,6 +107,8 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
 
 
 def run(p: Parameters):
+    init_out_directory(p)
+
     # Reproducibility
     random.seed(0)
     torch.manual_seed(0)
@@ -146,7 +149,7 @@ def run(p: Parameters):
     nb_train_batches = len(train_indices) // p.batch_size
 
     for epoch in range(p.nb_epoch):
-        LOGGER.info(f'Start epoch {epoch + 1:02}/{p.nb_epoch} ({epoch / p.nb_epoch * 100:4.1f}%)')
+        LOGGER.info(f'Start epoch {epoch + 1}/{p.nb_epoch} ({epoch / p.nb_epoch * 100:4.1f}%)')
         epoch_loss = 0
         for i, batch_indices in enumerate(np.array_split(train_indices, nb_train_batches)):
             # Select batch and convert to tensors
@@ -169,7 +172,7 @@ def run(p: Parameters):
                 # Show result for the first image of the batch
                 inferred_label = torch.argmax(network_output[0])
                 correct_label = int(batch_labels[0])
-                net_output_str = " | ".join(map(lambda x: f'{x[0]}:{int(x[1])}', enumerate(network_output[0])))
+                net_output_str = " | ".join(map(lambda x: f'{x[0]}:{int(x[1]):02}', enumerate(network_output[0])))
                 LOGGER.debug(f'Example - spikes per label: {net_output_str}')
                 LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
                              f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
@@ -233,8 +236,11 @@ def run(p: Parameters):
     time_msg = Stopwatch.stopping('testing', nb_test)
     LOGGER.info(f'{"Validation" if p.use_validation else "Testing"} completed. {time_msg}.')
 
-    LOGGER.info(f'Final accuracy on {nb_test} images: {correct_label_count / nb_test * 100:.5}%')
+    accuracy = correct_label_count / nb_test
+    LOGGER.info(f'Final accuracy on {nb_test} images: {accuracy * 100:.5}%')
 
     timer.stop()
     time_msg = timer.log()
     LOGGER.info(f'End of run "{p.run_name}". {time_msg}.')
+
+    result_out(p, accuracy, time_msg)

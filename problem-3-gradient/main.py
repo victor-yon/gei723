@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
     # Set simulation parameters
     # See file "parameters" for all possible parameters and default values
-    parameters = Parameters(run_name='tmp',
+    parameters = Parameters(run_name='test',
                             nb_train_samples=50_000,
                             nb_test_samples=10_000,
                             batch_size=256,
