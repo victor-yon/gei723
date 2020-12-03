@@ -29,7 +29,7 @@ class SpikeFunctionFastSigmoid(torch.autograd.Function):
     def backward(ctx, grad_output):
         forward_input, = ctx.saved_tensors
         grad_input = grad_output.clone()  # Clone will create a copy of the numerical value
-        grad_input[forward_input < 0] = 0  # The derivative of a ReLU function
+        grad_input = grad_input/(SpikeFunctionRelu.scale*torch.abs(input)+1.0)**2
         return grad_input
 
 
@@ -45,5 +45,7 @@ class SpikeFunctionPiecewise(torch.autograd.Function):
     def backward(ctx, grad_output):
         forward_input, = ctx.saved_tensors
         grad_input = grad_output.clone()  # Clone will create a copy of the numerical value
-        grad_input[forward_input < 0] = 0  # The derivative of a ReLU function
+        # grad_input[forward_input < -0.5] = 0  # segments between [0, 0.5], [0.5, 1], [1+] with -1 because of voltage threshold
+        # grad_input[-0.5 <= forward_input < 0] = 2 # *grad_input[-0.5 <= forward_input < 0]
+        # grad_input[forward_input >= 0] = -2
         return grad_input

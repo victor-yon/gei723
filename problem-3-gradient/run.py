@@ -6,11 +6,12 @@ from pathlib import Path
 import numpy as np
 import torch
 from sklearn import datasets
+from sklearn.metrics import confusion_matrix
 from sparse import COO
 
 from parameters import Parameters
 from plots import plot_losses
-from plots import plot_post_test
+from plots import plot_post_test, plot_activation_map
 from results_output import init_out_directory, result_out
 from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise
 from stopwatch import Stopwatch
@@ -20,7 +21,7 @@ DATA_DIR = './data'
 
 NB_CLASSES = 10
 IMAGE_SIZE = 28 * 28
-
+STEP = 2
 
 def load_data(p: Parameters):
     Stopwatch.starting('load_data')
@@ -147,7 +148,7 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
 
         # Apply the non-differentiable function
         recorded_spikes_at_t = spike_functions.apply(membrane_potential_at_t - p.v_threshold)
-
+        
         recorded_spikes.append(recorded_spikes_at_t)
 
         # Reset the spiked neurons
@@ -159,7 +160,7 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
 
 def run(p: Parameters):
     init_out_directory(p)
-
+    
     LOGGER.info(f'Beginning of run "{p.run_name}"')
     timer = Stopwatch('run')
     timer.start()
@@ -195,6 +196,10 @@ def run(p: Parameters):
 
     nb_train_batches = len(train_indices) // p.batch_size
     losses_evolution = []
+    # Activation map of the all except first layer
+    layer_to_measure = 0 # Index of the layer to register for activation map
+    activation_map_data = []
+    
 
     for epoch in range(p.nb_epoch):
         LOGGER.info(f'Start epoch {epoch + 1}/{p.nb_epoch} ({epoch / p.nb_epoch * 100:4.1f}%)')
@@ -210,23 +215,30 @@ def run(p: Parameters):
             # Code available at https://github.com/bamsumit/slayerPytorch
             min_spike_count = 10 * torch.ones((len(batch_labels), 10), device=device, dtype=torch.float)
             target_output = min_spike_count.scatter_(1, batch_labels, 100.0)
-
-            # Forward propagation through each layers
+            
+ # Forward propagation through each layers
             next_layer_input = batch_spike_train
+            a = 0 # Counter for the for loop
             for layer_params in params:
                 next_layer_input = run_spiking_layer(next_layer_input, layer_params, device, p)
+                # We measure the spikes of layer a for each i sample
+                if layer_to_measure == a and i % STEP == 0 and len(activation_map_data) <= 10:
+                    activation_map_data.append(torch.sum(next_layer_input, 2)[0])
+                    print(f"{a}, {i}")
+                a += 1
 
             # Count the spikes over time axis from the last layer output
             network_output = torch.sum(next_layer_input, 2)
+            #print(network_output.shape) torch(2, 10)
 
             if LOGGER.isEnabledFor(logging.DEBUG):
                 # Show result for the first image of the batch
                 inferred_label = torch.argmax(network_output[0])
                 correct_label = int(batch_labels[0])
                 net_output_str = " | ".join(map(lambda x: f'{x[0]}:{int(x[1]):02}', enumerate(network_output[0])))
-                LOGGER.debug(f'Example - spikes per label: {net_output_str}')
-                LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
-                             f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
+                # LOGGER.debug(f'Example - spikes per label: {net_output_str}')
+                # LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
+                #              f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
 
             loss = loss_fn(network_output, target_output)
             losses_evolution.append(float(loss))
@@ -240,6 +252,8 @@ def run(p: Parameters):
             LOGGER.debug(f'Batch {i + 1:03}/{nb_train_batches} completed with loss : {loss:.4f}')
 
         LOGGER.info(f'Epoch loss: {epoch_loss / nb_train_batches:.4f}')
+
+    plot_activation_map(activation_map_data, Parameters)
 
     time_msg = Stopwatch.stopping('training', p.nb_train_samples * p.nb_epoch)
     LOGGER.info(f'Training completed. {time_msg}.')
@@ -294,9 +308,9 @@ def run(p: Parameters):
             inferred_label = inferred_labels[0]
             correct_label = int(labels[batch_indices[0]])
             net_output_str = " | ".join(map(lambda x: f'{x[0]}:{int(x[1]):02}', enumerate(network_output[0])))
-            LOGGER.debug(f'Example - spikes per label: {net_output_str}')
-            LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
-                         f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
+            # LOGGER.debug(f'Example - spikes per label: {net_output_str}')
+            # LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
+            #              f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
 
     time_msg = Stopwatch.stopping('testing', nb_test)
     LOGGER.info(f'{"Validation" if p.use_validation else "Testing"} completed. {time_msg}.')
@@ -311,8 +325,7 @@ def run(p: Parameters):
     # Mettres d'autres graphiques ici
     
     y_true = labels[test_indices]
-    y_pred = np.array(y_pred)
-    y_pred = y_pred[0,:]
+    y_pred = np.array(y_pred).reshape(1,-1)[0,:]
     plot_post_test(y_pred, y_true, Parameters)
 
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
