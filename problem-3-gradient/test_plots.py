@@ -12,7 +12,7 @@ plt.show()
 
 piecewise_linear = np.zeros(len(x_values))
 piecewise_linear[np.where(x_values < -0.5)] = 1
-# piecewise_linear[-0.5 <= x_values < 0] = 2
+piecewise_linear[np.where((x_values >= -0.5) & (x_values < 0))] = 2
 # piecewise_linear[0 <= x_values < 0.5] = -2
 plt.figure()
 plt.plot(x_values, piecewise_linear)
