@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 
 class SpikeFunctionRelu(torch.autograd.Function):
@@ -22,7 +23,7 @@ class SpikeFunctionFastSigmoid(torch.autograd.Function):
     def forward(ctx, layer_input):
         ctx.save_for_backward(layer_input)
         out = torch.zeros_like(layer_input)
-        raise NotImplemented
+        out[layer_input > 0] = 1.0  # We spike when the (potential-threshold) > 0 #raise NotImplemented
         return out
 
     @staticmethod
@@ -38,7 +39,7 @@ class SpikeFunctionPiecewise(torch.autograd.Function):
     def forward(ctx, layer_input):
         ctx.save_for_backward(layer_input)
         out = torch.zeros_like(layer_input)
-        raise NotImplemented
+        out[layer_input > 0] = 1.0  # We spike when the (potential-threshold) > 0 #raise NotImplemented
         return out
 
     @staticmethod

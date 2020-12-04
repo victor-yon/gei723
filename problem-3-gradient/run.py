@@ -11,7 +11,7 @@ from sparse import COO
 
 from parameters import Parameters
 from plots import plot_losses
-from plots import plot_post_test, plot_activation_map
+from plots import plot_post_test, plot_activation_map, plot_gradient_surrogates
 from results_output import init_out_directory, result_out
 from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise
 from stopwatch import Stopwatch
@@ -222,9 +222,9 @@ def run(p: Parameters):
             for layer_params in params:
                 next_layer_input = run_spiking_layer(next_layer_input, layer_params, device, p)
                 # We measure the spikes of layer a for each i sample
-                if layer_to_measure == a and i % STEP == 0 and len(activation_map_data) <= 10:
-                    activation_map_data.append(torch.sum(next_layer_input, 2)[0])
-                    print(f"{a}, {i}")
+                if layer_to_measure == a and i % STEP == 0 and len(activation_map_data) <= 8:
+                    activation_map_data.append(torch.sum(next_layer_input, 2)[layer_to_measure])
+                    # print(f"{a}, {i}")
                 a += 1
 
             # Count the spikes over time axis from the last layer output
@@ -236,9 +236,9 @@ def run(p: Parameters):
                 inferred_label = torch.argmax(network_output[0])
                 correct_label = int(batch_labels[0])
                 net_output_str = " | ".join(map(lambda x: f'{x[0]}:{int(x[1]):02}', enumerate(network_output[0])))
-                # LOGGER.debug(f'Example - spikes per label: {net_output_str}')
-                # LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
-                #              f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
+                LOGGER.debug(f'Example - spikes per label: {net_output_str}')
+                LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
+                             f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
 
             loss = loss_fn(network_output, target_output)
             losses_evolution.append(float(loss))
@@ -308,9 +308,9 @@ def run(p: Parameters):
             inferred_label = inferred_labels[0]
             correct_label = int(labels[batch_indices[0]])
             net_output_str = " | ".join(map(lambda x: f'{x[0]}:{int(x[1]):02}', enumerate(network_output[0])))
-            # LOGGER.debug(f'Example - spikes per label: {net_output_str}')
-            # LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
-            #              f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
+            LOGGER.debug(f'Example - spikes per label: {net_output_str}')
+            LOGGER.debug(f'Example - inferred ({inferred_label}) for label ({correct_label}) '
+                         f'{"[GOOD]" if inferred_label == correct_label else "[BAD]"}')
 
     time_msg = Stopwatch.stopping('testing', nb_test)
     LOGGER.info(f'{"Validation" if p.use_validation else "Testing"} completed. {time_msg}.')
@@ -327,7 +327,7 @@ def run(p: Parameters):
     y_true = labels[test_indices]
     y_pred = np.array(y_pred).reshape(1,-1)[0,:]
     plot_post_test(y_pred, y_true, Parameters)
-
+    plot_gradient_surrogates(Parameters)
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
 
     timer.stop()

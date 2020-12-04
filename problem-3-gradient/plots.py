@@ -65,20 +65,41 @@ def plot_activation_map(activation_map_data, parameters: Parameters):
 # Courbes d'accord
 
 # Potentiel de noeuds de la couche cachée
-
+# def plot_potential_input_layer(parameter):
+    
+#     plt.figure()
+    
 
 # Histogramme des courbes des poids
 
+
+
 # Evolution des poids
 
+
+
 # Fonction d'approximation du gradient
-def gradient_surrogates():
-    plt.figure()
+def plot_gradient_surrogates(parameters: Parameters):
+    
     # Set un axe des x avec un linspace
     x_values = np.linspace(-1, 1, 101)
+    
+    plt.figure()
+
     # Tracer les trois fonctions que l'on a utilisées soit la fast sigmoid, absolue, 
     fast_sigmoid = x_values / (1 + np.absolute(x_values))
-    step_function = 
-    piecewise_linear
+    step_function = np.zeros(len(x_values))
+    # step_function[np.where(x_values < 0)] = 0
+    step_function[np.where(x_values >= 0)] = 1
+    piecewise_linear = np.zeros(len(x_values))
+    piecewise_linear[np.where(x_values < -0.5)] = 1
+    piecewise_linear[np.where((x_values >= -0.5) & (x_values < 0))] = 2
     
-    plt.plot()
+    plt.plot(x_values, fast_sigmoid, label='fast_sigmoid')
+    plt.plot(x_values, step_function, label='step_function')
+    plt.plot(x_values, piecewise_linear, label='piecewise_linear')
+    plt.xlabel('Nombre d\'échantillons')
+    plt.ylabel('Moyenne des décharges')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
