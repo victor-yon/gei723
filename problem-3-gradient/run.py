@@ -13,7 +13,7 @@ from parameters import Parameters
 from plots import plot_losses
 from plots import plot_post_test, plot_activation_map, plot_gradient_surrogates
 from results_output import init_out_directory, result_out
-from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise
+from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise, SpikeFunctionSigmoid, SpikeFunctionPiecewiseSymetrique
 from stopwatch import Stopwatch
 
 LOGGER = logging.getLogger('mnist_grad')
@@ -145,6 +145,10 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
             spike_functions = SpikeFunctionFastSigmoid
         elif p.surrogate_gradient == 'piecewise':
             spike_functions = SpikeFunctionPiecewise
+        elif  p.surrogate_gradient == 'sigmoid':
+            spike_functions = SpikeFunctionSigmoid
+        elif  p.surrogate_gradient == 'piecewiseSymetrique':
+            spike_functions = SpikeFunctionPiecewiseSymetrique
 
         # Apply the non-differentiable function
         recorded_spikes_at_t = spike_functions.apply(membrane_potential_at_t - p.v_threshold)
@@ -326,7 +330,7 @@ def run(p: Parameters):
     
     y_true = labels[test_indices]
     y_pred = np.array(y_pred).reshape(1,-1)[0,:]
-    plot_post_test(y_pred, y_true, Parameters)
+    #plot_post_test(y_pred, y_true, Parameters)
     plot_gradient_surrogates(Parameters)
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
 
