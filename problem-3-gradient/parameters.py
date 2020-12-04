@@ -27,8 +27,10 @@ class Parameters:
 
     size_hidden_layers: Tuple[int, ...] = (128,)  # Number of neuron for each hidden layers
     learning_rate: int = 0.01
+    alpha: float = 0.5
 
     surrogate_gradient: str = 'relu'  # "relu" or "fast_sigmoid" or "piecewise"
+    extreme_learning: bool = False # Si oui on ne fera la rétropropagation que sur la derniere couche
 
     @property
     def absolute_duration(self):

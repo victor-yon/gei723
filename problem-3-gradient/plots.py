@@ -14,7 +14,7 @@ def plot_losses(losses_evolution, parameters: Parameters):
               f"Nombre d'époques : {parameters.nb_epoch}")
     plt.xlabel('Nombre de batches')
     plt.ylabel('Erreur (MSE)')
-    save_plot('losses', parameters)
+    save_plot(f'losses run:{parameters.run_name}', parameters)
     plt.show()
 
 
@@ -39,7 +39,7 @@ def plot_post_test(y_pred, y_true, parameters: Parameters):
             ax.text(i, j, f'{c:.2f}', va='center', ha='center')
 
     plt.tight_layout()
-    save_plot('confusion_matrix', parameters)
+    save_plot('confusion_matrix run:{parameters.run_name}', parameters)
     plt.show()
 
 # Carte d'activation
@@ -54,28 +54,60 @@ def plot_activation_map(activation_map_data, parameters: Parameters):
     # plot chaque ligne de la matrice spike pour la carte d'activation
     plt.xlabel('indice du neurone de la couche excitatrice')
     plt.ylabel('Nombre de décharge par neurones')
-    plt.title('Carte d\'activation de 9 exemples (couche excitatrice)')
+    plt.title(f'Carte d\'activation de {len(activation_map_data)} exemples (couche excitatrice)')
     plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
-    #plt.ylim([0, 10])
     plt.tight_layout()
-    save_plot('activation_map_hidden_layer',parameters)
+    save_plot('activation_map_hidden_layer run:{parameters.run_name}', parameters)
     plt.show()
 
 
 # Courbes d'accord
 
 # Potentiel de noeuds de la couche cachée
-# def plot_potential_input_layer(parameter):
-    
-#     plt.figure()
+def plot_potential_input_layer(parameters:Parameters):
+    # Prend en entrée le ne
+    plt.figure()
+    plt.xlabel('indice du neurone de la couche excitatrice')
+    plt.ylabel('Nombre de décharge par neurones')
+    plt.title('Carte d\'activation de 9 exemples (couche excitatrice)')
+    plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
+    plt.tight_layout()
+    save_plot('potential run:{parameters.run_name}', parameters)
+    plt.show()
     
 
 # Histogramme des courbes des poids
+# Doit montrer la différence entre l'extreme learning et l'apprentissage standard
+def plot_weight_hist(params, parameters: Parameters):
+    nb_of_histograms = len(parameters.size_hidden_layers)+1
+    # params = params.detach().numpy()
+    for i in range(nb_of_histograms):
+        params[i] = params[i].detach().numpy()
+        plt.subplot(nb_of_histograms, 1, i+1)
+        #params
+        plt.hist(params[i], bins=20, edgecolor='black', label=f'{i}e weight tensor')
+        plt.xlabel('indice du neurone de la couche excitatrice')
+        plt.ylabel('Nombre de décharge par neurones')
+        if i == 0:
+            plt.title('Histogrammes des poids depuis la couche d\'entrée vers la sortie')
+    plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
+    plt.tight_layout()
+    save_plot('histograms run:{parameters.run_name}', parameters)
+    plt.show()
 
 
-
-# Evolution des poids
-
+# Relu with different alpha
+def plot_relu_alpha(parameters: Parameters):
+    plt.figure()
+    x_values = np.linspace(-2, 2, 301)
+    relu_fn = np.zeros(len(x_values))
+    relu_fn[np.where(x_values <= 0)] = -parameters.alpha*x_values[np.where(x_values <= 0)]
+    relu_fn[np.where(x_values > 0)] = x_values[np.where(x_values > 0)]
+    plt.plot(x_values, relu_fn)
+    plt.title(f'Relu avec alpha = {parameters.alpha}')
+    plt.tight_layout()
+    save_plot(f'relu with alpha {parameters.alpha} run:{parameters.run_name}', parameters)
+    plt.show()
 
 
 # Fonction d'approximation du gradient
@@ -102,4 +134,5 @@ def plot_gradient_surrogates(parameters: Parameters):
     plt.ylabel('Moyenne des décharges')
     plt.legend()
     plt.tight_layout()
+    save_plot('gradient_surrogates, run:{parameters.run_name}', parameters)
     plt.show()

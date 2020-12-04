@@ -30,7 +30,7 @@ class SpikeFunctionFastSigmoid(torch.autograd.Function):
     def backward(ctx, grad_output):
         forward_input, = ctx.saved_tensors
         grad_input = grad_output.clone()  # Clone will create a copy of the numerical value
-        grad_input = grad_input/(SpikeFunctionRelu.scale*torch.abs(input)+1.0)**2
+        grad_input = grad_input/(SpikeFunctionRelu.scale*torch.abs(forward_input)+1.0)**2
         return grad_input
 
 
