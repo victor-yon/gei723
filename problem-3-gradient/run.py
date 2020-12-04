@@ -6,12 +6,11 @@ from pathlib import Path
 import numpy as np
 import torch
 from sklearn import datasets
-from sklearn.metrics import confusion_matrix
 from sparse import COO
 
 from parameters import Parameters
+from plots import plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha
 from plots import plot_losses
-from plots import plot_post_test, plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha
 from results_output import init_out_directory, result_out
 from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise
 from stopwatch import Stopwatch
@@ -325,10 +324,10 @@ def run(p: Parameters):
 
     y_true = labels[test_indices]
     y_pred = np.array(y_pred).reshape(1,-1)[0,:]
-    plot_post_test(y_pred, y_true, p)
+    # plot_post_test(y_pred, y_true, p)
     plot_gradient_surrogates(p)
     plot_weight_hist(params, p)
-    plot_activation_map(activation_map_data, Parameters)
+    plot_activation_map(activation_map_data, p)
     plot_relu_alpha(p)
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
 
