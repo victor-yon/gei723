@@ -11,7 +11,7 @@ from sparse import COO
 
 from parameters import Parameters
 from plots import plot_losses
-from plots import plot_post_test, plot_activation_map, plot_gradient_surrogates
+from plots import plot_post_test, plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha
 from results_output import init_out_directory, result_out
 from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise
 from stopwatch import Stopwatch
@@ -37,6 +37,8 @@ def load_data(p: Parameters):
         # Let's download the MNIST dataset, available at https://www.openml.org/d/554
         # Don't use cache because it's slow
         images, labels = datasets.fetch_openml('mnist_784', version=1, return_X_y=True, cache=False)
+        print(type(images))
+        # print(images.)
 
         # Convert the labels (string) to integers for convenience
         labels = np.array(labels, dtype=np.int)
@@ -81,6 +83,9 @@ def init_net_params(run_parameters: Parameters, device):
     # Input -> first hidden
     weights_input_hidden = torch.empty((IMAGE_SIZE, run_parameters.size_hidden_layers[0]),
                                        device=device, dtype=torch.float, requires_grad=True)
+    if run_parameters.extreme_learning:
+        weights_input_hidden.requires_grad_(False)
+    
     torch.nn.init.normal_(weights_input_hidden, mean=0., std=.1)
     params.append(weights_input_hidden)
     nb_params += IMAGE_SIZE * run_parameters.size_hidden_layers[0]
@@ -90,6 +95,8 @@ def init_net_params(run_parameters: Parameters, device):
         weights_hidden_hidden = torch.empty(
             (run_parameters.size_hidden_layers[layer_index], run_parameters.size_hidden_layers[layer_index + 1]),
             device=device, dtype=torch.float, requires_grad=True)
+        if run_parameters.extreme_learning and layer_index < run_parameters.size_hidden_layers:
+            weights_hidden_hidden.requires_grad_(False)
 
         torch.nn.init.normal_(weights_hidden_hidden, mean=0., std=.1)
         params.append(weights_hidden_hidden)
@@ -208,7 +215,7 @@ def run(p: Parameters):
             # Select batch and convert to tensors
             batch_spike_train = torch.FloatTensor(images_spike_train[batch_indices].todense()).to(device)
             batch_labels = torch.LongTensor(labels[batch_indices, np.newaxis]).to(device)
-
+            
             # Here we create a target spike count (10 spikes for wrong label, 100 spikes for true label)
             # in a one-hot fashion
             # This approach is seen in Shrestha & Orchard (2018) https://arxiv.org/pdf/1810.08646.pdf
@@ -216,7 +223,7 @@ def run(p: Parameters):
             min_spike_count = 10 * torch.ones((len(batch_labels), 10), device=device, dtype=torch.float)
             target_output = min_spike_count.scatter_(1, batch_labels, 100.0)
             
- # Forward propagation through each layers
+            # Forward propagation through each layers
             next_layer_input = batch_spike_train
             a = 0 # Counter for the for loop
             for layer_params in params:
@@ -252,8 +259,6 @@ def run(p: Parameters):
             LOGGER.debug(f'Batch {i + 1:03}/{nb_train_batches} completed with loss : {loss:.4f}')
 
         LOGGER.info(f'Epoch loss: {epoch_loss / nb_train_batches:.4f}')
-
-    plot_activation_map(activation_map_data, Parameters)
 
     time_msg = Stopwatch.stopping('training', p.nb_train_samples * p.nb_epoch)
     LOGGER.info(f'Training completed. {time_msg}.')
@@ -326,8 +331,11 @@ def run(p: Parameters):
     
     y_true = labels[test_indices]
     y_pred = np.array(y_pred).reshape(1,-1)[0,:]
-    plot_post_test(y_pred, y_true, Parameters)
-    plot_gradient_surrogates(Parameters)
+    plot_post_test(y_pred, y_true, p)
+    plot_gradient_surrogates(p)
+    plot_weight_hist(params, p)
+    plot_activation_map(activation_map_data, Parameters)
+    plot_relu_alpha(p)
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
 
     timer.stop()
