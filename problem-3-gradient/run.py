@@ -6,7 +6,6 @@ from pathlib import Path
 import numpy as np
 import torch
 from sklearn import datasets
-from sklearn.metrics import confusion_matrix
 from sparse import COO
 
 from parameters import Parameters
@@ -22,6 +21,7 @@ DATA_DIR = './data'
 NB_CLASSES = 10
 IMAGE_SIZE = 28 * 28
 STEP = 2
+
 
 def load_data(p: Parameters):
     Stopwatch.starting('load_data')
@@ -148,7 +148,7 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
 
         # Apply the non-differentiable function
         recorded_spikes_at_t = spike_functions.apply(membrane_potential_at_t - p.v_threshold)
-        
+
         recorded_spikes.append(recorded_spikes_at_t)
 
         # Reset the spiked neurons
@@ -160,7 +160,7 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
 
 def run(p: Parameters):
     init_out_directory(p)
-    
+
     LOGGER.info(f'Beginning of run "{p.run_name}"')
     timer = Stopwatch('run')
     timer.start()
@@ -197,9 +197,8 @@ def run(p: Parameters):
     nb_train_batches = len(train_indices) // p.batch_size
     losses_evolution = []
     # Activation map of the all except first layer
-    layer_to_measure = 0 # Index of the layer to register for activation map
+    layer_to_measure = 0  # Index of the layer to register for activation map
     activation_map_data = []
-    
 
     for epoch in range(p.nb_epoch):
         LOGGER.info(f'Start epoch {epoch + 1}/{p.nb_epoch} ({epoch / p.nb_epoch * 100:4.1f}%)')
@@ -215,21 +214,19 @@ def run(p: Parameters):
             # Code available at https://github.com/bamsumit/slayerPytorch
             min_spike_count = 10 * torch.ones((len(batch_labels), 10), device=device, dtype=torch.float)
             target_output = min_spike_count.scatter_(1, batch_labels, 100.0)
-            
- # Forward propagation through each layers
+
+            # Forward propagation through each layers
             next_layer_input = batch_spike_train
-            a = 0 # Counter for the for loop
+            a = 0  # Counter for the for loop
             for layer_params in params:
                 next_layer_input = run_spiking_layer(next_layer_input, layer_params, device, p)
                 # We measure the spikes of layer a for each i sample
                 if layer_to_measure == a and i % STEP == 0 and len(activation_map_data) <= 8:
                     activation_map_data.append(torch.sum(next_layer_input, 2)[layer_to_measure])
-                    # print(f"{a}, {i}")
                 a += 1
 
             # Count the spikes over time axis from the last layer output
             network_output = torch.sum(next_layer_input, 2)
-            #print(network_output.shape) torch(2, 10)
 
             if LOGGER.isEnabledFor(logging.DEBUG):
                 # Show result for the first image of the batch
@@ -322,12 +319,10 @@ def run(p: Parameters):
 
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting.')
 
-    # Mettres d'autres graphiques ici
-    
     y_true = labels[test_indices]
-    y_pred = np.array(y_pred).reshape(1,-1)[0,:]
-    plot_post_test(y_pred, y_true, Parameters)
-    plot_gradient_surrogates(Parameters)
+    y_pred = np.array(y_pred).reshape(1, -1)[0, :]
+    plot_post_test(y_pred, y_true, p)
+    plot_gradient_surrogates(p)
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
 
     timer.stop()
