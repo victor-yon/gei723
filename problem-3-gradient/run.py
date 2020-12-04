@@ -6,11 +6,12 @@ from pathlib import Path
 import numpy as np
 import torch
 from sklearn import datasets
+from sklearn.metrics import confusion_matrix
 from sparse import COO
 
 from parameters import Parameters
 from plots import plot_losses
-from plots import plot_post_test, plot_activation_map, plot_gradient_surrogates
+from plots import plot_post_test, plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha
 from results_output import init_out_directory, result_out
 from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise
 from stopwatch import Stopwatch
@@ -81,6 +82,9 @@ def init_net_params(run_parameters: Parameters, device):
     # Input -> first hidden
     weights_input_hidden = torch.empty((IMAGE_SIZE, run_parameters.size_hidden_layers[0]),
                                        device=device, dtype=torch.float, requires_grad=True)
+    if run_parameters.extreme_learning:
+        weights_input_hidden.requires_grad_(False)
+
     torch.nn.init.normal_(weights_input_hidden, mean=0., std=.1)
     params.append(weights_input_hidden)
     nb_params += IMAGE_SIZE * run_parameters.size_hidden_layers[0]
@@ -90,6 +94,8 @@ def init_net_params(run_parameters: Parameters, device):
         weights_hidden_hidden = torch.empty(
             (run_parameters.size_hidden_layers[layer_index], run_parameters.size_hidden_layers[layer_index + 1]),
             device=device, dtype=torch.float, requires_grad=True)
+        if run_parameters.extreme_learning and layer_index < run_parameters.size_hidden_layers:
+            weights_hidden_hidden.requires_grad_(False)
 
         torch.nn.init.normal_(weights_hidden_hidden, mean=0., std=.1)
         params.append(weights_hidden_hidden)
@@ -250,8 +256,6 @@ def run(p: Parameters):
 
         LOGGER.info(f'Epoch loss: {epoch_loss / nb_train_batches:.4f}')
 
-    plot_activation_map(activation_map_data, Parameters)
-
     time_msg = Stopwatch.stopping('training', p.nb_train_samples * p.nb_epoch)
     LOGGER.info(f'Training completed. {time_msg}.')
 
@@ -320,9 +324,12 @@ def run(p: Parameters):
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting.')
 
     y_true = labels[test_indices]
-    y_pred = np.array(y_pred).reshape(1, -1)[0, :]
+    y_pred = np.array(y_pred).reshape(1,-1)[0,:]
     plot_post_test(y_pred, y_true, p)
     plot_gradient_surrogates(p)
+    plot_weight_hist(params, p)
+    plot_activation_map(activation_map_data, Parameters)
+    plot_relu_alpha(p)
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
 
     timer.stop()
