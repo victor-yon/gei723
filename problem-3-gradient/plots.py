@@ -101,12 +101,12 @@ def plot_relu_alpha(parameters: Parameters):
     plt.figure()
     x_values = np.linspace(-2, 2, 301)
     relu_fn = np.zeros(len(x_values))
-    relu_fn[np.where(x_values <= 0)] = -parameters.alpha * x_values[np.where(x_values <= 0)]
+    relu_fn[np.where(x_values <= 0)] = -parameters.surrogate_alpha * x_values[np.where(x_values <= 0)]
     relu_fn[np.where(x_values > 0)] = x_values[np.where(x_values > 0)]
     plt.plot(x_values, relu_fn)
-    plt.title(f'Relu avec alpha = {parameters.alpha} ({parameters.run_name})')
+    plt.title(f'Relu avec alpha = {parameters.surrogate_alpha} ({parameters.run_name})')
     plt.tight_layout()
-    save_plot(f'relu with alpha {parameters.alpha}', parameters)
+    save_plot(f'relu with alpha {parameters.surrogate_alpha}', parameters)
     plt.show()
 
 
