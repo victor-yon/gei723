@@ -156,6 +156,9 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
         elif p.surrogate_gradient == 'piecewise_sym':
             spike_functions = SpikeFunctionPiecewiseSymetrique
 
+        # Set the alpha variable
+        spike_functions.alpha = p.surrogate_alpha
+
         # Apply the non-differentiable function
         recorded_spikes_at_t = spike_functions.apply(membrane_potential_at_t - p.v_threshold)
 

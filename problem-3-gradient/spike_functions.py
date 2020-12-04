@@ -1,8 +1,11 @@
 import torch
-import numpy as np
+
+ALPHA = 0.001
 
 
 class SpikeFunctionRelu(torch.autograd.Function):
+    alpha = None
+
     @staticmethod
     def forward(ctx, layer_input):
         ctx.save_for_backward(layer_input)
@@ -14,7 +17,7 @@ class SpikeFunctionRelu(torch.autograd.Function):
     def backward(ctx, grad_output):
         forward_input, = ctx.saved_tensors
         grad_input = grad_output.clone()  # Clone will create a copy of the numerical value
-        grad_input[forward_input < 0] = grad_input[forward_input < 0]*0  # The derivative of a ReLU function
+        grad_input[forward_input < 0] = grad_input[forward_input < 0] * ALPHA  # The derivative of a ReLU function
         return grad_input
 
 
@@ -30,8 +33,9 @@ class SpikeFunctionFastSigmoid(torch.autograd.Function):
     def backward(ctx, grad_output):
         forward_input, = ctx.saved_tensors
         grad_input = grad_output.clone()  # Clone will create a copy of the numerical value
-        grad_input = grad_input/(torch.abs(forward_input)+1.0)**2 #multiplier par un alpha variable
+        grad_input = ALPHA * grad_input / (torch.abs(forward_input) + 1.0) ** 2
         return grad_input
+
 
 class SpikeFunctionSigmoid(torch.autograd.Function):
     @staticmethod
@@ -45,8 +49,10 @@ class SpikeFunctionSigmoid(torch.autograd.Function):
     def backward(ctx, grad_output):
         forward_input, = ctx.saved_tensors
         grad_input = grad_output.clone()  # Clone will create a copy of the numerical value
-        grad = grad_input*10*torch.exp(-10*forward_input)/(1+torch.exp(-10*forward_input))**2 #remplacer 10 par alpha variable
+        grad = grad_input * ALPHA * torch.exp(-ALPHA * forward_input) / (
+                1 + torch.exp(-ALPHA * forward_input)) ** 2
         return grad
+
 
 class SpikeFunctionPiecewise(torch.autograd.Function):
     @staticmethod
@@ -60,8 +66,12 @@ class SpikeFunctionPiecewise(torch.autograd.Function):
     def backward(ctx, grad_output):
         forward_input, = ctx.saved_tensors
         grad_input = grad_output.clone()  # Clone will create a copy of the numerical value
-        grad_input[forward_input >= 0.5] = 2*forward_input[forward_input>= 0.5] - 1 # segment de droite débutant en alpha et allant jusqu'à 1. EQUATION : (1/(1-alpha)))*forward_input -alpha/(1-alpha)
+        # segment de droite débutant en alpha et allant jusqu'à 1.
+        # EQUATION : (1/(1-alpha)))*forward_input -alpha/(1-alpha)
+        grad_input[forward_input >= ALPHA] = (1 / (1 - ALPHA)) * forward_input[
+            forward_input >= ALPHA] - ALPHA / (1 - ALPHA)
         return grad_input
+
 
 class SpikeFunctionPiecewiseSymetrique(torch.autograd.Function):
     @staticmethod
@@ -75,6 +85,6 @@ class SpikeFunctionPiecewiseSymetrique(torch.autograd.Function):
     def backward(ctx, grad_output):
         forward_input, = ctx.saved_tensors
         grad_input = grad_output.clone()  # Clone will create a copy of the numerical value
-        grad_input[forward_input <= -.5] = 0
-        grad_input[forward_input > 0.5 ] = 0  # le segment vaut 0 pour x<-0.5 et x > 0.5
+        grad_input[forward_input <= -ALPHA] = 0
+        grad_input[forward_input > ALPHA] = 0  # le segment vaut 0 pour x<-0.5 et x > 0.5
         return grad_input
