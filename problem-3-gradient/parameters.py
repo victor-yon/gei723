@@ -29,7 +29,7 @@ class Parameters:
     learning_rate: int = 0.01
     alpha: float = 0.5
 
-    surrogate_gradient: str = 'relu'  # "relu" or "fast_sigmoid" or "piecewise"
+    surrogate_gradient: str = 'relu'  # "relu" or "fast_sigmoid" or "piecewise" or "sigmoid" or "piecewiseSymetrique"
     extreme_learning: bool = False # Si oui on ne fera la rétropropagation que sur la derniere couche
 
     @property
@@ -62,9 +62,9 @@ class Parameters:
         if self.tau_i.units != self.delta_t.units:
             raise ValueError(f'tau_i ({self.tau_i}) and delta_t ({self.delta_t}) should have the same unit.')
 
-        if self.surrogate_gradient not in ['relu', 'fast_sigmoid', 'piecewise']:
+        if self.surrogate_gradient not in ['relu', 'fast_sigmoid', 'piecewise', 'sigmoid', 'piecewiseSymetrique']:
             raise ValueError(f'Unknown surrogate_gradient "{self.surrogate_gradient}".'
-                             f'Should be: "relu" or "fast_sigmoid" or "piecewise".')
+                             f'Should be: "relu" or "fast_sigmoid" or "piecewise" or "sigmoid" or "piecewiseSymetrique".')
 
     def __str__(self):
         return '\n'.join([f'{name}: {str(value)}' for name, value in self.get_namespace().items()])

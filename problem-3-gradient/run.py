@@ -12,7 +12,7 @@ from parameters import Parameters
 from plots import plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha
 from plots import plot_losses
 from results_output import init_out_directory, result_out
-from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise
+from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise, SpikeFunctionSigmoid, SpikeFunctionPiecewiseSymetrique
 from stopwatch import Stopwatch
 
 LOGGER = logging.getLogger('mnist_grad')
@@ -150,6 +150,10 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
             spike_functions = SpikeFunctionFastSigmoid
         elif p.surrogate_gradient == 'piecewise':
             spike_functions = SpikeFunctionPiecewise
+        elif  p.surrogate_gradient == 'sigmoid':
+            spike_functions = SpikeFunctionSigmoid
+        elif  p.surrogate_gradient == 'piecewiseSymetrique':
+            spike_functions = SpikeFunctionPiecewiseSymetrique
 
         # Apply the non-differentiable function
         recorded_spikes_at_t = spike_functions.apply(membrane_potential_at_t - p.v_threshold)
@@ -329,6 +333,7 @@ def run(p: Parameters):
     plot_weight_hist(params, p)
     plot_activation_map(activation_map_data, p)
     plot_relu_alpha(p)
+
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
 
     timer.stop()
