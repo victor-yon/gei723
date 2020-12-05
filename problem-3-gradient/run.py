@@ -9,7 +9,7 @@ from sklearn import datasets
 from sparse import COO
 
 from parameters import Parameters
-from plots import plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha
+from plots import plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha, plot_post_test, plot_output_one_hot
 from plots import plot_losses
 from results_output import init_out_directory, result_out
 from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise, SpikeFunctionSigmoid, \
@@ -305,7 +305,7 @@ def run(p: Parameters):
 
         # Count the spikes over time axis from the last layer output
         network_output = torch.sum(next_layer_input, 2)
-
+        
         # Do the prediction by selecting the output neuron with the most number of spikes
         _, am = torch.max(network_output, 1)
         inferred_labels = am.detach().cpu().numpy()
@@ -332,12 +332,21 @@ def run(p: Parameters):
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting.')
 
     y_true = labels[test_indices]
-    y_pred = np.array(y_pred).reshape(1,-1)[0,:]
-    # plot_post_test(y_pred, y_true, p)
+    y_pred_array = np.zeros([1,len(y_pred[0])])
+    len_to_delete = len(y_pred[0])
+    while len(y_pred):
+        y_pred_array_temp = np.array(y_pred[0]).reshape(1,-1)
+        y_pred_array = np.concatenate((y_pred_array,y_pred_array_temp), axis=1)
+        del y_pred[0]
+    y_pred_array = y_pred_array.reshape(1,-1)[0,:]
+    y_pred_array = np.delete(y_pred_array,range(0,len_to_delete),0)
+
+    plot_post_test(y_pred_array, y_true, p)
     plot_gradient_surrogates(p)
     plot_weight_hist(params, p)
     plot_activation_map(activation_map_data, p)
     plot_relu_alpha(p)
+    # plot_output_one_hot(next_layer_input, p)
 
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
 
