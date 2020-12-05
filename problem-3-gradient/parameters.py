@@ -25,13 +25,15 @@ class Parameters:
     tau_i: units = 5 * units.ms
     v_threshold: float = 1.0
 
-    size_hidden_layers: Tuple[int, ...] = (128,)  # Number of neuron for each hidden layers
     learning_rate: int = 0.01
 
     surrogate_gradient: str = 'relu'  # "relu" or "fast_sigmoid" or "piecewise" or "sigmoid" or "piecewise_sym"
     surrogate_alpha: float = None
 
-    extreme_learning: bool = False  # If true only the parameters of the last layer will trained
+    # Number of neuron for each hidden layers
+    size_hidden_layers: Tuple[int, ...] = (128,)
+    # If false the weights preceding this layer won't change during the training
+    trainable_layers: Tuple[bool, ...] = (True,)
 
     @property
     def absolute_duration(self):
@@ -69,6 +71,10 @@ class Parameters:
 
         if self.surrogate_alpha is None:
             raise ValueError(f'The surrogate alpha need to be explicitly set.')
+
+        if len(self.size_hidden_layers) != len(self.trainable_layers):
+            raise ValueError(f'The size_hidden_layers ({len(self.size_hidden_layers)})'
+                             f' and trainable_layers ({len(self.trainable_layers)}) should have the same size.')
 
     def __str__(self):
         return '\n'.join([f'{name}: {str(value)}' for name, value in self.get_namespace().items()])

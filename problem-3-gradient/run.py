@@ -80,10 +80,10 @@ def init_net_params(run_parameters: Parameters, device):
     nb_params = 0
 
     # Input -> first hidden
+    # If those parameters are fixed, disable to gradient
     weights_input_hidden = torch.empty((IMAGE_SIZE, run_parameters.size_hidden_layers[0]),
-                                       device=device, dtype=torch.float, requires_grad=True)
-    if run_parameters.extreme_learning:
-        weights_input_hidden.requires_grad_(False)
+                                       device=device, dtype=torch.float,
+                                       requires_grad=run_parameters.trainable_layers[0])
 
     torch.nn.init.normal_(weights_input_hidden, mean=0., std=.1)
     params.append(weights_input_hidden)
@@ -91,17 +91,18 @@ def init_net_params(run_parameters: Parameters, device):
 
     # All others hidden -> hidden
     for layer_index in range(len(run_parameters.size_hidden_layers) - 1):
+        # If those parameters are fixed, disable to gradient
         weights_hidden_hidden = torch.empty(
             (run_parameters.size_hidden_layers[layer_index], run_parameters.size_hidden_layers[layer_index + 1]),
-            device=device, dtype=torch.float, requires_grad=True)
-        if run_parameters.extreme_learning and layer_index < run_parameters.size_hidden_layers:
-            weights_hidden_hidden.requires_grad_(False)
+            device=device, dtype=torch.float,
+            requires_grad=run_parameters.trainable_layers[layer_index + 1])
 
         torch.nn.init.normal_(weights_hidden_hidden, mean=0., std=.1)
         params.append(weights_hidden_hidden)
         nb_params += run_parameters.size_hidden_layers[layer_index] * run_parameters.size_hidden_layers[layer_index + 1]
 
     # Last layer -> output
+    # Gradient always enable for the last layer
     weights_hidden_output = torch.empty((run_parameters.size_hidden_layers[-1], NB_CLASSES),
                                         device=device, dtype=torch.float, requires_grad=True)
     torch.nn.init.normal_(weights_hidden_output, mean=0., std=.1)
