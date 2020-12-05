@@ -61,7 +61,20 @@ def plot_activation_map(activation_map_data, parameters: Parameters):
     plt.show()
 
 
-# Courbes d'accord
+# Courbes d'accord couche sortie
+def plot_output_one_hot(data ,parameters: Parameters): # dernier next_layer_input
+    data = data.detach().numpy()
+    
+    plt.figure()
+    for i in range(10):
+        data_to_plot = d
+        plt.plot()
+    plt.xlabel()
+    plt.ylabel()
+    plt.title()
+    plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
+    save_plot('courbes accord sortie', parameters)
+    plt.show()
 
 # Potentiel de noeuds de la couche cachée
 def plot_potential_input_layer(parameters: Parameters):
