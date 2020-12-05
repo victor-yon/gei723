@@ -13,7 +13,7 @@ from plots import plot_activation_map, plot_gradient_surrogates, plot_weight_his
 from plots import plot_losses
 from results_output import init_out_directory, result_out
 from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise, SpikeFunctionSigmoid, \
-    SpikeFunctionPiecewiseSymetrique
+    SpikeFunctionPiecewiseSymmetric
 from stopwatch import Stopwatch
 
 LOGGER = logging.getLogger('mnist_grad')
@@ -154,7 +154,7 @@ def run_spiking_layer(input_spike_train, layer_weights, device, p: Parameters):
         elif p.surrogate_gradient == 'sigmoid':
             spike_functions = SpikeFunctionSigmoid
         elif p.surrogate_gradient == 'piecewise_sym':
-            spike_functions = SpikeFunctionPiecewiseSymetrique
+            spike_functions = SpikeFunctionPiecewiseSymmetric
 
         # Set the alpha variable
         spike_functions.alpha = p.surrogate_alpha

@@ -29,7 +29,7 @@ class Parameters:
     learning_rate: int = 0.01
 
     surrogate_gradient: str = 'relu'  # "relu" or "fast_sigmoid" or "piecewise" or "sigmoid" or "piecewise_sym"
-    surrogate_alpha: float = 1
+    surrogate_alpha: float = None
 
     extreme_learning: bool = False  # If true only the parameters of the last layer will trained
 
@@ -66,6 +66,9 @@ class Parameters:
         if self.surrogate_gradient not in ['relu', 'fast_sigmoid', 'piecewise', 'sigmoid', 'piecewise_sym']:
             raise ValueError(f'Unknown surrogate_gradient "{self.surrogate_gradient}".'
                              f'Should be: "relu" or "fast_sigmoid" or "piecewise" or "sigmoid" or "piecewise_sym".')
+
+        if self.surrogate_alpha is None:
+            raise ValueError(f'The surrogate alpha need to be explicitly set.')
 
     def __str__(self):
         return '\n'.join([f'{name}: {str(value)}' for name, value in self.get_namespace().items()])
