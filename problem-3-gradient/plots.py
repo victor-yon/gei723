@@ -5,12 +5,11 @@ from sklearn.metrics import confusion_matrix
 from parameters import Parameters
 from results_output import save_plot
 
-COURBES = 10
 
 
 def plot_losses(losses_evolution, parameters: Parameters):
     plt.plot(losses_evolution)
-    plt.title("Evolution de la fonction de cout pendant l'entrainement.\n"
+    plt.title("Evolution de la fonction de coût pendant l'entraînement.\n"
               f"Taille des batches : {parameters.batch_size} - "
               f"Nombre d'époques : {parameters.nb_epoch} ({parameters.run_name})")
     plt.xlabel('Nombre de batches')
@@ -42,8 +41,7 @@ def plot_post_test(y_pred, y_true, parameters: Parameters):
     plt.show()
 
 
-# Carte d'activation
-# On veut la somme des spikes à travers le temps des 128 neurones cachées à 
+# Carte d'activation 
 def plot_activation_map(activation_map_data, parameters: Parameters):
     plt.figure()
 
@@ -54,58 +52,66 @@ def plot_activation_map(activation_map_data, parameters: Parameters):
     plt.xlabel('indice du neurone de la couche excitatrice')
     plt.ylabel('Nombre de décharge par neurones')
     plt.title(
-        f'Carte d\'activation de {len(activation_map_data)} exemples (couche excitatrice) ({parameters.run_name})')
+        f'Carte d\'activation de {len(activation_map_data)} exemples (1ère couche cachée) ({parameters.run_name})')
     plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
     plt.tight_layout()
     save_plot('activation_map_hidden_layer', parameters)
     plt.show()
 
-
 # Courbes d'accord couche sortie
-def plot_output_one_hot(data ,parameters: Parameters): # dernier next_layer_input
+def plot_output_one_hot(data, labels, parameters: Parameters): # dernier next_layer_input
     data = data.detach().numpy()
-    
+    data_to_plot = np.zeros([10, 10])
     plt.figure()
     for i in range(10):
-        data_to_plot = d
-        plt.plot()
-    plt.xlabel()
-    plt.ylabel()
-    plt.title()
+        data_to_plot[i,:] = np.sum(data[np.where([labels == 0])[0],:],axis=0)
+        plt.plot(range(10), data[i,:], label=f'label {i}')
+    plt.xlabel('étiquettes')
+    plt.xlim([-1, 10])
+    plt.xticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    plt.ylabel('Décharge par étiquette selon le label')
+    plt.title(f'Courbes d\'accord ({parameters.run_name})')
     plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
+    plt.tight_layout()
     save_plot('courbes accord sortie', parameters)
     plt.show()
 
-# Potentiel de noeuds de la couche cachée
-def plot_potential_input_layer(parameters: Parameters):
-    # Prend en entrée le ne
-    plt.figure()
-    plt.xlabel('indice du neurone de la couche excitatrice')
-    plt.ylabel('Nombre de décharge par neurones')
-    plt.title(f'Carte d\'activation de 9 exemples (couche excitatrice) ({parameters.run_name})')
-    plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
-    plt.tight_layout()
-    save_plot('potential', parameters)
+# Histogramme des poids
+def plot_weight_hist(params, parameters: Parameters):
+    mat1 = params[0].detach().numpy()
+    mat2 = params[-1].detach().numpy()
+    
+    fig, axs = plt.subplots(2,1,constrained_layout=True)
+    fig.suptitle(f'Histogrammes des poids synaptiques ({parameters.run_name})')
+    axs[0].hist(mat1, bins=20, edgecolor='black')
+    axs[0].set_title('entrée -> première couche cachée')
+    axs[0].set_ylabel('Quantités par valeur')
+    
+    axs[1].hist(mat2, bins=20, edgecolor='black')
+    axs[1].set_title('dernière couche cachée -> sortie')
+    axs[1].set_xlabel('valeur des poids')
+    axs[1].set_ylabel('Quantités par valeur')
+    save_plot('histograms', parameters)
     plt.show()
 
-
-# Histogramme des courbes des poids
-# Doit montrer la différence entre l'extreme learning et l'apprentissage standard
-def plot_weight_hist(params, parameters: Parameters):
-    nb_of_histograms = len(parameters.size_hidden_layers) + 1
-    # params = params.detach().numpy()
-    for i in range(nb_of_histograms):
-        params[i] = params[i].detach().numpy()
-        plt.subplot(nb_of_histograms, 1, i + 1)
-        # params
-        plt.hist(params[i], bins=20, edgecolor='black', label=f'{i}e weight tensor')
-        plt.xlabel('indice du neurone de la couche excitatrice')
-        plt.ylabel('Nombre de décharge par neurones')
-        if i == 0:
-            plt.title(f'Histogrammes des poids depuis la couche d\'entrée vers la sortie ({parameters.run_name})')
-    plt.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8), ncol=1)
-    plt.tight_layout()
-    save_plot('histograms', parameters)
+# Évolution de certains poids
+def plot_weight_evo(weight_evo, parameters: Parameters):
+    x_val = range(len(weight_evo[0]))
+    fig, axs = plt.subplots(2,1,constrained_layout=True)
+    fig.suptitle(f'Évolution de poids sélectionnés au hasard ({parameters.run_name})')
+    axs[0].set_xlabel('temps')
+    axs[0].plot(x_val, weight_evo[0], label='Poids 1')
+    axs[0].plot(x_val, weight_evo[1], label='Poids 2')
+    axs[0].set_title('entrée->cachée')
+    axs[0].legend(loc='upper right')
+    axs[0].set_ylabel('valeur')
+    axs[1].plot(x_val,weight_evo[2], label='Poids 3')
+    axs[1].plot(x_val, weight_evo[3], label='Poids 4')
+    axs[1].set_xlabel('temps')
+    axs[1].set_ylabel('valeur')
+    axs[1].set_title('cachée->sortie')
+    axs[1].legend(loc='upper right')
+    save_plot('weight_evolution', parameters)
     plt.show()
 
 
@@ -114,12 +120,16 @@ def plot_relu_alpha(parameters: Parameters):
     plt.figure()
     x_values = np.linspace(-2, 2, 301)
     relu_fn = np.zeros(len(x_values))
-    relu_fn[np.where(x_values <= 0)] = -parameters.surrogate_alpha * x_values[np.where(x_values <= 0)]
+    relu_fn[np.where(x_values <= 0)] = parameters.surrogate_alpha * x_values[np.where(x_values <= 0)]
     relu_fn[np.where(x_values > 0)] = x_values[np.where(x_values > 0)]
     plt.plot(x_values, relu_fn)
     plt.title(f'Relu avec alpha = {parameters.surrogate_alpha} ({parameters.run_name})')
+    plt.axhline(0, color='black', linestyle=':')
+    plt.axvline(0, color='black', linestyle=':')
+    plt.xlabel('valeurs de x')
+    plt.ylabel('Relu(x)')
     plt.tight_layout()
-    save_plot(f'relu with alpha {parameters.surrogate_alpha}', parameters)
+    save_plot(f'Relu with alpha {parameters.surrogate_alpha}', parameters)
     plt.show()
 
 
@@ -129,21 +139,33 @@ def plot_gradient_surrogates(parameters: Parameters):
     x_values = np.linspace(-1, 1, 101)
 
     plt.figure()
+    alpha = parameters.surrogate_alpha
+    # Tracer les trois fonctions que l'on a utilisées soit la fast sigmoid, absolue,
+    if parameters.surrogate_gradient == 'fast_sigmoid':
+        fast_sigmoid = x_values / (1 + np.absolute(x_values))
+        plt.plot(x_values, fast_sigmoid, label='fast_sigmoid')
+        
+    elif parameters.surrogate_gradient == 'relu':
+        step_function = np.zeros(len(x_values))
+        # step_function[np.where(x_values < 0)] = 0
+        step_function[np.where(x_values >= 0)] = 1
+        plt.plot(x_values, step_function, label='step_function')
+        
+    elif parameters.surrogate_gradient == 'piecewise':
+        piecewise_linear = np.zeros(len(x_values))
+        piecewise_linear[x_values >= alpha] = (1 / (1 - alpha)) * x_values[
+                        x_values >= alpha] - alpha / (1 - alpha)
+        plt.plot(x_values, piecewise_linear, label='piecewise_linear')
 
-    # Tracer les trois fonctions que l'on a utilisées soit la fast sigmoid, absolue, 
-    fast_sigmoid = x_values / (1 + np.absolute(x_values))
-    step_function = np.zeros(len(x_values))
-    # step_function[np.where(x_values < 0)] = 0
-    step_function[np.where(x_values >= 0)] = 1
-    piecewise_linear = np.zeros(len(x_values))
-    piecewise_linear[np.where(x_values < -0.5)] = 1
-    piecewise_linear[np.where((x_values >= -0.5) & (x_values < 0))] = 2
+        
+    elif parameters.surrogate_gradient == 'piecewise_sym':
+        piecewise_sym = np.ones(len(x_values))*x_values
+        piecewise_sym[x_values <= -alpha] = 0
+        piecewise_sym[x_values > alpha] = 0
+        plt.plot(x_values, piecewise_sym, label='piecewise_symetric')
 
-    plt.plot(x_values, fast_sigmoid, label='fast_sigmoid')
-    plt.plot(x_values, step_function, label='step_function')
-    plt.plot(x_values, piecewise_linear, label='piecewise_linear')
-    plt.xlabel('Nombre d\'échantillons')
-    plt.ylabel('Moyenne des décharges')
+    plt.xlabel('Potentiel membranaire')
+    plt.ylabel('Approximation du gradient')
     plt.title(f'Fonction d\'approximation du gradient ({parameters.run_name})')
     plt.legend()
     plt.tight_layout()

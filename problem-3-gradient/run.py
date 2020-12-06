@@ -9,7 +9,7 @@ from sklearn import datasets
 from sparse import COO
 
 from parameters import Parameters
-from plots import plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha, plot_post_test, plot_output_one_hot
+from plots import plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha, plot_post_test, plot_output_one_hot, plot_weight_evo
 from plots import plot_losses
 from results_output import init_out_directory, result_out
 from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise, SpikeFunctionSigmoid, \
@@ -22,6 +22,7 @@ DATA_DIR = './data'
 NB_CLASSES = 10
 IMAGE_SIZE = 28 * 28
 STEP = 2
+# WEIGHT_TO_MEASURE = [[400, 6000],[500, 2000]] # First layer and last layer
 
 
 def load_data(p: Parameters):
@@ -213,7 +214,9 @@ def run(p: Parameters):
     # Activation map of the all except first layer
     layer_to_measure = 0  # Index of the layer to register for activation map
     activation_map_data = []
-
+    weight_evo = [[],[],[],[]]
+    array_params_i_h = params[0].detach().numpy()
+    array_params_h_o = params[-1].detach().numpy()
     for epoch in range(p.nb_epoch):
         LOGGER.info(f'Start epoch {epoch + 1}/{p.nb_epoch} ({epoch / p.nb_epoch * 100:4.1f}%)')
         epoch_loss = 0
@@ -254,11 +257,19 @@ def run(p: Parameters):
             loss = loss_fn(network_output, target_output)
             losses_evolution.append(float(loss))
 
+            # random values to track specific weights
+            weight_evo[0].append(array_params_i_h[15][20])
+            weight_evo[1].append(array_params_i_h[15][10])
+            weight_evo[2].append(array_params_h_o[8][1])
+            weight_evo[3].append(array_params_h_o[8][5])
+            
             # Backward propagation
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
+            array_params_i_h = params[0].detach().numpy()
+            array_params_h_o = params[-1].detach().numpy()
 
             LOGGER.debug(f'Batch {i + 1:03}/{nb_train_batches} completed with loss : {loss:.4f}')
 
@@ -271,7 +282,7 @@ def run(p: Parameters):
 
     LOGGER.info(f'Post training plotting.')
 
-    plot_losses(losses_evolution, p)
+    # plot_losses(losses_evolution, p)
 
     LOGGER.info(f'Post training plotting completed and saved.')
 
@@ -341,12 +352,14 @@ def run(p: Parameters):
     y_pred_array = y_pred_array.reshape(1,-1)[0,:]
     y_pred_array = np.delete(y_pred_array,range(0,len_to_delete),0)
 
-    plot_post_test(y_pred_array, y_true, p)
+    #plot_post_test(y_pred_array, y_true, p)
     plot_gradient_surrogates(p)
-    plot_weight_hist(params, p)
-    plot_activation_map(activation_map_data, p)
-    plot_relu_alpha(p)
-    # plot_output_one_hot(next_layer_input, p)
+    #plot_weight_hist(params, p)
+    #plot_activation_map(activation_map_data, p)
+    #plot_relu_alpha(p)
+    #plot_output_one_hot(network_output, labels, p)
+    #plot_weight_evo(weight_evo, p)
+    
 
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
 
