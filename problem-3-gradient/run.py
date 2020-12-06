@@ -352,13 +352,13 @@ def run(p: Parameters):
     y_pred_array = y_pred_array.reshape(1,-1)[0,:]
     y_pred_array = np.delete(y_pred_array,range(0,len_to_delete),0)
 
-    #plot_post_test(y_pred_array, y_true, p)
+    plot_post_test(y_pred_array, y_true, p)
     plot_gradient_surrogates(p)
-    #plot_weight_hist(params, p)
-    #plot_activation_map(activation_map_data, p)
-    #plot_relu_alpha(p)
-    #plot_output_one_hot(network_output, labels, p)
-    #plot_weight_evo(weight_evo, p)
+    plot_weight_hist(params, p)
+    plot_activation_map(activation_map_data, p)
+    plot_relu_alpha(p)
+    plot_output_one_hot(network_output, labels, p)
+    plot_weight_evo(weight_evo, p)
     
 
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
