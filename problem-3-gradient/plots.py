@@ -1,10 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix as confusion
 
 from parameters import Parameters
 from results_output import save_plot
-
 
 
 def plot_losses(losses_evolution, parameters: Parameters):
@@ -19,10 +18,10 @@ def plot_losses(losses_evolution, parameters: Parameters):
 
 
 # Matrice de confusion
-def plot_post_test(y_pred, y_true, parameters: Parameters):
+def confusion_matrix(y_pred, y_true, parameters: Parameters):
     figure, ax = plt.subplots()
     max_val = 10
-    cf = confusion_matrix(y_true, y_pred, labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], normalize='true')
+    cf = confusion(y_true, y_pred, labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], normalize='true')
     plt.ylabel('étiquettes')
     plt.xlabel('prédictions')
     plt.title(f'Matrice de confusion ({parameters.run_name})')

@@ -9,7 +9,8 @@ from sklearn import datasets
 from sparse import COO
 
 from parameters import Parameters
-from plots import plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha, plot_post_test, plot_output_one_hot, plot_weight_evo
+from plots import plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha, confusion_matrix, \
+    plot_output_one_hot, plot_weight_evo
 from plots import plot_losses
 from results_output import init_out_directory, result_out
 from spike_functions import SpikeFunctionRelu, SpikeFunctionFastSigmoid, SpikeFunctionPiecewise, SpikeFunctionSigmoid, \
@@ -352,7 +353,7 @@ def run(p: Parameters):
     y_pred_array = y_pred_array.reshape(1,-1)[0,:]
     y_pred_array = np.delete(y_pred_array,range(0,len_to_delete),0)
 
-    plot_post_test(y_pred_array, y_true, p)
+    confusion_matrix(y_pred_array, y_true, p)
     plot_gradient_surrogates(p)
     plot_weight_hist(params, p)
     plot_activation_map(activation_map_data, p)
