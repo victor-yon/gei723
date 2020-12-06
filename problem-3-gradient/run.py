@@ -282,7 +282,7 @@ def run(p: Parameters):
 
     LOGGER.info(f'Post training plotting.')
 
-    # plot_losses(losses_evolution, p)
+    plot_losses(losses_evolution, p)
 
     LOGGER.info(f'Post training plotting completed and saved.')
 
