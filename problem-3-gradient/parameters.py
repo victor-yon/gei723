@@ -39,7 +39,7 @@ class Parameters:
     # Discrétisation du temps, la mise à jour des calculs est effectuée tous les pas de temps delta t.
     delta_t: units = 1 * units.ms
 
-    # Paramètres physique des neurones
+    # Paramètres des neurones LIF
     tau_v: units = 20 * units.ms
     tau_i: units = 5 * units.ms
     v_threshold: float = 1.0

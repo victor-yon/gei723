@@ -69,15 +69,72 @@ Voici les principaux paramètres :
 ### Fichiers
 
 - `main.py` : Fichier principal pour lancer une simulation.
-- `mnist_stdp.py` : Création du réseau de neurones avec Biran2, boucles d'entrainement et de test. Chargement des données, normalisation et choix des neurones de classification.
+- `mnist_stdp.py` : Création du réseau de neurones avec Biran2, boucles d'entrainement et de test. Chargement des
+  données, normalisation et choix des neurones de classification.
 - `mnist_stdp_out.py` : Défintion des fonctions permettant d'entregistrer les résultats dans des fichiers.
 - `mnist_stdp_plots.py` : Définition des méthodes permettant de créer des figures avec matplotlib et de les enregistrer.
-- `simulation_parameters.py` : Définition d'un objet de type `dataclass` permettant de stocker les paramètres d'entrainement et leurs valeurs par défaut.
+- `simulation_parameters.py` : Définition d'un objet de type `dataclass` permettant de stocker les paramètres
+  d'entrainement et leurs valeurs par défaut.
 - `stopwatch.py` : Défintion de fonctions utilitaires permettant de mesurer les temps d'exécution.
-- `stdp_shape_freq_study/` : Contient les simulations permettant de mesurer les effets de la forme des équations de STDP ainsi que le changement de fréquence d'entrée.
+- `stdp_shape_freq_study/` : Contient les simulations permettant de mesurer les effets de la forme des équations de STDP
+  ainsi que le changement de fréquence d'entrée.
 - `out/` : Dossier de sortie des résultats, doit contenir des fichiers texts et images après chaque simulation.
 - `data/` : Dossier contenant les fichiers temporaires pour accélérer les simulations.
-- `diehl_cook_classification.py` : Notebook à trous utilisé pour tester les premières implémentations. /!\ N'est pas utilisé pour les simulations finales.
+- `diehl_cook_classification.py` : Notebook à trous utilisé pour tester les premières implémentations. /!\ N'est pas
+  utilisé pour les simulations finales.
+
+## Problème 3 : Surrogate gradient
+
+### Exécuter
+
+```
+cd problem-3-gradient
+pyhton3 main.py
+```
+
+### Paramètres
+
+Dans le fichier `main.py` plusieurs variables sont facilement modifiables grace à l'objet "Parameters" dont les
+différentes paramètres et valeurs par défaut sont accessible dans le fichier `parameters.py`.
+
+Voici les principaux paramètres :
+
+- `run_name` - Nom de la simulation afin de sauvegarder les résultats dans le dossier `out/`. Ne peut pas être deux fois
+  le même, sauf si son nom est "tmp" (sous linux).
+- `nb_train_samples` - Nombre d'images que l'on présente au réseau pendant la phase d'entraînement.
+- `nb_test_samples` - Nombre d'images que l'on présente au réseau pendant la phase de test.
+- `nb_validation_samples` - Nombre d'images que l'on présente au réseau pendant la phase de validation.
+- `nb_epoch` - Nombre de fois où l'on présente le jeu de données (époques).
+- `batch_size` - Nombre d'images présentés entre chaque rétropropagation d'erreur.
+- `use_validation` - Si vrai utilise le jeu de validation à la place du jeu de test.
+- `duration_per_image` - Temps de présentation d'une image au réseau Temps total pendant lequel une image génère des
+  décharges
+- `delta_t` - Discrétisation du temps, la mise à jour des calculs est effectuée tous les pas de temps delta t.
+- `tau_v`, `tau_i` et `v_threshold` - Paramètres des neurones LIF
+- `learning_rate` - Taux d'apprentissage permettant de réguler l'apprentissage pendant la rétropropagation de l'erreur.
+- `surrogate_gradient` - Type de fonction de non linéarité, cinq types de fonctions de non linéarité sont étudiées. "
+  relu", "fast_sigmoid", "piecewise", "sigmoid" ou "piecewise_sym"
+- `surrogate_alpha` - Valeur alpha de la fonction de subsitution
+- `size_hidden_layers` - Nombre de neurones par couche cachée et nombre de couche cachée entre la couche d'entrée (
+  présentation de l'image) et la couche de sortie (prédiction du label). Format (taille caché 1, taille caché 2, ...)
+- `trainable_layers` - Si faux les paramètres de la couche correspondante ne seront pas modifié lors de l'entrainement.
+  Format (connections entre l'entrée et cachée 1, connections entre les couches cachées, ...)
+
+### Fichiers
+
+- `main.py` : Fichier principal pour lancer une simulation.
+- `parameters.py` : Définition d'un objet de type `dataclass` permettant de stocker les paramètres d'entrainement et
+  leurs valeurs par défaut.
+- `plots.py` : Définition des méthodes permettant de créer des figures avec matplotlib.
+- `results_output.py` : Défintion des fonctions permettant d'entregistrer les résultats dans des fichiers.
+- `run.py` : Création des paramètres du réseau de neurones, chargement des données et boucles d'entrainement et de test
+  ou de validation.
+- `spike_functions.py` : Définition des functions et propagation avant et arrière ainsi que des functions de
+  substitution de la dérivé.
+- `stopwatch.py` : Défintion de fonctions utilitaires permettant de mesurer les temps d'exécution.
+- `out/` : Dossier de sortie des résultats, doit contenir des fichiers texts et images après chaque simulation.
+- `backprop-snn-pytorch.ipynb` : Notebook utilisé pour les premiers tests. /!\ N'est pas utilisé pour les simulations
+  finales.
 
 # Auteurs
 
