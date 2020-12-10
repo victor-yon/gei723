@@ -1,3 +1,10 @@
+"""
+author: Antoine Marion
+date: 10/12/2020
+version history: See Github
+description: Définition des méthodes permettant de créer des figures avec matplotlib.
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import confusion_matrix as confusion
@@ -18,7 +25,7 @@ def plot_losses(losses_evolution, parameters: Parameters):
 
 
 # Matrice de confusion
-def confusion_matrix(y_pred, y_true, parameters: Parameters):
+def plot_confusion_matrix(y_pred, y_true, parameters: Parameters):
     figure, ax = plt.subplots()
     max_val = 10
     cf = confusion(y_true, y_pred, labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], normalize='true')
@@ -57,14 +64,15 @@ def plot_activation_map(activation_map_data, parameters: Parameters):
     save_plot('activation_map_hidden_layer', parameters)
     plt.show()
 
+
 # Courbes d'accord couche sortie
-def plot_output_one_hot(data, labels, parameters: Parameters): # dernier next_layer_input
+def plot_output_one_hot(data, labels, parameters: Parameters):  # dernier next_layer_input
     data = data.detach().numpy()
     data_to_plot = np.zeros([10, 10])
     plt.figure()
     for i in range(10):
-        data_to_plot[i,:] = np.sum(data[np.where([labels == 0])[0],:],axis=0)
-        plt.plot(range(10), data[i,:], label=f'label {i}')
+        data_to_plot[i, :] = np.sum(data[np.where([labels == 0])[0], :], axis=0)
+        plt.plot(range(10), data[i, :], label=f'label {i}')
     plt.xlabel('étiquettes')
     plt.xlim([-1, 10])
     plt.xticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
@@ -75,17 +83,18 @@ def plot_output_one_hot(data, labels, parameters: Parameters): # dernier next_la
     save_plot('courbes accord sortie', parameters)
     plt.show()
 
+
 # Histogramme des poids
 def plot_weight_hist(params, parameters: Parameters):
     mat1 = params[0].detach().numpy()
     mat2 = params[-1].detach().numpy()
-    
-    fig, axs = plt.subplots(2,1,constrained_layout=True)
+
+    fig, axs = plt.subplots(2, 1, constrained_layout=True)
     fig.suptitle(f'Histogrammes des poids synaptiques ({parameters.run_name})')
     axs[0].hist(mat1, bins=20, edgecolor='black')
     axs[0].set_title('entrée -> première couche cachée')
     axs[0].set_ylabel('Quantités par valeur')
-    
+
     axs[1].hist(mat2, bins=20, edgecolor='black')
     axs[1].set_title('dernière couche cachée -> sortie')
     axs[1].set_xlabel('valeur des poids')
@@ -93,10 +102,11 @@ def plot_weight_hist(params, parameters: Parameters):
     save_plot('histograms', parameters)
     plt.show()
 
+
 # Évolution de certains poids
 def plot_weight_evo(weight_evo, parameters: Parameters):
     x_val = range(len(weight_evo[0]))
-    fig, axs = plt.subplots(2,1,constrained_layout=True)
+    fig, axs = plt.subplots(2, 1, constrained_layout=True)
     fig.suptitle(f'Évolution de poids sélectionnés au hasard ({parameters.run_name})')
     axs[0].set_xlabel('temps')
     axs[0].plot(x_val, weight_evo[0], label='Poids 1')
@@ -104,7 +114,7 @@ def plot_weight_evo(weight_evo, parameters: Parameters):
     axs[0].set_title('entrée->cachée')
     axs[0].legend(loc='upper right')
     axs[0].set_ylabel('valeur')
-    axs[1].plot(x_val,weight_evo[2], label='Poids 3')
+    axs[1].plot(x_val, weight_evo[2], label='Poids 3')
     axs[1].plot(x_val, weight_evo[3], label='Poids 4')
     axs[1].set_xlabel('temps')
     axs[1].set_ylabel('valeur')
@@ -143,22 +153,21 @@ def plot_gradient_surrogates(parameters: Parameters):
     if parameters.surrogate_gradient == 'fast_sigmoid':
         fast_sigmoid = x_values / (1 + np.absolute(x_values))
         plt.plot(x_values, fast_sigmoid, label='fast_sigmoid')
-        
+
     elif parameters.surrogate_gradient == 'relu':
         step_function = np.zeros(len(x_values))
         # step_function[np.where(x_values < 0)] = 0
         step_function[np.where(x_values >= 0)] = 1
         plt.plot(x_values, step_function, label='step_function')
-        
+
     elif parameters.surrogate_gradient == 'piecewise':
         piecewise_linear = np.zeros(len(x_values))
         piecewise_linear[x_values >= alpha] = (1 / (1 - alpha)) * x_values[
-                        x_values >= alpha] - alpha / (1 - alpha)
+            x_values >= alpha] - alpha / (1 - alpha)
         plt.plot(x_values, piecewise_linear, label='piecewise_linear')
 
-        
     elif parameters.surrogate_gradient == 'piecewise_sym':
-        piecewise_sym = np.ones(len(x_values))*x_values
+        piecewise_sym = np.ones(len(x_values)) * x_values
         piecewise_sym[x_values <= -alpha] = 0
         piecewise_sym[x_values > alpha] = 0
         plt.plot(x_values, piecewise_sym, label='piecewise_symetric')

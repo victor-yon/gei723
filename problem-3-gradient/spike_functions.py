@@ -1,3 +1,11 @@
+"""
+authors: Soline Bernard et Antoine Marion
+date: 10/12/2020
+version history: See Github
+description: Définition des functions et propagation avant et arrière ainsi que des functions de substitution
+de la dérivé.
+"""
+
 import torch
 
 

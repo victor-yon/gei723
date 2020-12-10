@@ -1,3 +1,12 @@
+"""
+authors: Victor Yon, Antoine Marion et Soline Bernard
+date: 10/12/2020
+version history: See Github
+description: Création des paramètres du réseau de neurones, chargement des données et boucles d'entrainement et de test
+ou de validation.
+D'après le notebook de Ismael Balafrej.
+"""
+
 import logging
 import pickle
 import random
@@ -9,7 +18,8 @@ from sklearn import datasets
 from sparse import COO
 
 from parameters import Parameters
-from plots import plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha, confusion_matrix, \
+from plots import plot_activation_map, plot_gradient_surrogates, plot_weight_hist, plot_relu_alpha, \
+    plot_confusion_matrix, \
     plot_output_one_hot, plot_weight_evo
 from plots import plot_losses
 from results_output import init_out_directory, result_out
@@ -23,7 +33,6 @@ DATA_DIR = './data'
 NB_CLASSES = 10
 IMAGE_SIZE = 28 * 28
 STEP = 2
-# WEIGHT_TO_MEASURE = [[400, 6000],[500, 2000]] # First layer and last layer
 
 
 def load_data(p: Parameters):
@@ -215,7 +224,7 @@ def run(p: Parameters):
     # Activation map of the all except first layer
     layer_to_measure = 0  # Index of the layer to register for activation map
     activation_map_data = []
-    weight_evo = [[],[],[],[]]
+    weight_evo = [[], [], [], []]
     array_params_i_h = params[0].detach().numpy()
     array_params_h_o = params[-1].detach().numpy()
     for epoch in range(p.nb_epoch):
@@ -263,7 +272,7 @@ def run(p: Parameters):
             weight_evo[1].append(array_params_i_h[15][10])
             weight_evo[2].append(array_params_h_o[8][1])
             weight_evo[3].append(array_params_h_o[8][5])
-            
+
             # Backward propagation
             optimizer.zero_grad()
             loss.backward()
@@ -317,7 +326,7 @@ def run(p: Parameters):
 
         # Count the spikes over time axis from the last layer output
         network_output = torch.sum(next_layer_input, 2)
-        
+
         # Do the prediction by selecting the output neuron with the most number of spikes
         _, am = torch.max(network_output, 1)
         inferred_labels = am.detach().cpu().numpy()
@@ -344,23 +353,22 @@ def run(p: Parameters):
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting.')
 
     y_true = labels[test_indices]
-    y_pred_array = np.zeros([1,len(y_pred[0])])
+    y_pred_array = np.zeros([1, len(y_pred[0])])
     len_to_delete = len(y_pred[0])
     while len(y_pred):
-        y_pred_array_temp = np.array(y_pred[0]).reshape(1,-1)
-        y_pred_array = np.concatenate((y_pred_array,y_pred_array_temp), axis=1)
+        y_pred_array_temp = np.array(y_pred[0]).reshape(1, -1)
+        y_pred_array = np.concatenate((y_pred_array, y_pred_array_temp), axis=1)
         del y_pred[0]
-    y_pred_array = y_pred_array.reshape(1,-1)[0,:]
-    y_pred_array = np.delete(y_pred_array,range(0,len_to_delete),0)
+    y_pred_array = y_pred_array.reshape(1, -1)[0, :]
+    y_pred_array = np.delete(y_pred_array, range(0, len_to_delete), 0)
 
-    confusion_matrix(y_pred_array, y_true, p)
+    plot_confusion_matrix(y_pred_array, y_true, p)
     plot_gradient_surrogates(p)
     plot_weight_hist(params, p)
     plot_activation_map(activation_map_data, p)
     plot_relu_alpha(p)
     plot_output_one_hot(network_output, labels, p)
     plot_weight_evo(weight_evo, p)
-    
 
     LOGGER.info(f'Post {"validation" if p.use_validation else "testing"} plotting completed and saved.')
 
